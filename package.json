@@ -1,0 +1,11 @@
+{
+  "name": "snake-warriors",
+  "version": "0.1.0",
+  "description": "Snake Warriors 2P beat 'em up game",
+  "scripts": {
+    "start": "npx http-server -p 1990 -a 0.0.0.0"
+  },
+  "keywords": ["game", "snake", "beat-em-up"],
+  "author": "",
+  "license": "MIT"
+}
