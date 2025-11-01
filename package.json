@@ -1,11 +1,11 @@
 {
   "name": "snake-warriors",
-  "version": "0.1.0",
-  "description": "Snake Warriors 2P beat 'em up game",
+  "version": "0.2.0",
+  "description": "Snake Warriors - A swamp-based 2-player beat 'em up game featuring serpent heroes battling waves of frogs",
   "scripts": {
     "start": "npx http-server -p 1990 -a 0.0.0.0"
   },
-  "keywords": ["game", "snake", "beat-em-up"],
+  "keywords": ["game", "snake", "beat-em-up", "2-player", "pixel-art", "arcade"],
   "author": "",
   "license": "MIT"
 }

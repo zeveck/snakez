@@ -12,6 +12,91 @@ const CONFIG = {
     COMBO_TIMEOUT: 2000,
 };
 
+// Asset Manager
+const assets = {
+    images: {},
+    loaded: 0,
+    total: 0,
+
+    // Define all image paths
+    manifest: {
+        // Title and backgrounds
+        'logo_title': 'graphics/logo_title.png',
+        'background_swamp': 'graphics/background_swamp.png',
+        'title_background': 'graphics/title-background_swamp.png',
+        'water_tile': 'graphics/snakez_water_tile_64.png',
+
+        // Player 1 (Green Snake)
+        'snake_p1_idle': 'graphics/snake_p1_idle.png',
+        'snake_p1_extended': 'graphics/snake_p1_extended.png',
+        'snake_p1_jumping': 'graphics/snake_p1_jumping.png',
+        'snake_p1_rolling': 'graphics/snake_p1_rolling.png',
+        'snake_p1_swimming': 'graphics/snake_p1_swimming.png',
+
+        // Player 2 (Orange Snake)
+        'snake_p2_idle': 'graphics/snake_p2_idle.png',
+        'snake_p2_extended': 'graphics/snake_p2_extended.png',
+        'snake_p2_biting': 'graphics/snake_p2_biting.png',
+        'snake_p2_rolling': 'graphics/snake_p2_rolling.png',
+        'snake_p2_swimming': 'graphics/snake_p2_swimming.png',
+
+        // Enemies
+        'frog_small_idle': 'graphics/frog_small_idle.png',
+        'frog_small_jumping': 'graphics/frog_small_jumping.png',
+        'frog_medium_idle': 'graphics/frog_medium_idle.png',
+        'frog_medium_jumping': 'graphics/frog_medium_jumping.png',
+        'frog_large_boss': 'graphics/frog_large_boss.png',
+        'frog_poison_dart': 'graphics/frog_poison_dart.png',
+
+        // Environment
+        'lilypad_small': 'graphics/lilypad_small.png',
+        'lilypad_large': 'graphics/lilypad_large.png',
+
+        // Effects
+        'effect_splash': 'graphics/effect_splash.png',
+        'effect_hit': 'graphics/effect_hit.png',
+        'effect_combo': 'graphics/effect_combo.png',
+        'effect_death_particles': 'graphics/effect_death_particles.png',
+
+        // UI
+        'ui_healthbar_frame': 'graphics/ui_healthbar_frame.png',
+        'ui_healthbar_fill': 'graphics/ui_healthbar_fill.png',
+        'ui_combo_star': 'graphics/ui_combo_star.png',
+    },
+
+    load(callback) {
+        this.total = Object.keys(this.manifest).length;
+        this.loaded = 0;
+
+        for (const [key, path] of Object.entries(this.manifest)) {
+            const img = new Image();
+            img.onload = () => {
+                this.loaded++;
+                if (this.loaded === this.total && callback) {
+                    callback();
+                }
+            };
+            img.onerror = () => {
+                console.error(`Failed to load image: ${path}`);
+                this.loaded++;
+                if (this.loaded === this.total && callback) {
+                    callback();
+                }
+            };
+            img.src = path;
+            this.images[key] = img;
+        }
+    },
+
+    get(key) {
+        return this.images[key];
+    },
+
+    getProgress() {
+        return this.total > 0 ? this.loaded / this.total : 0;
+    }
+};
+
 // Game State
 const game = {
     canvas: null,
@@ -320,52 +405,65 @@ class Snake extends Entity {
     }
 
     draw(ctx) {
-        // Draw body segments first
-        ctx.fillStyle = this.color;
-        for (let i = this.segments.length - 1; i >= 0; i--) {
-            const alpha = 1 - (i / this.segments.length) * 0.5;
-            ctx.globalAlpha = alpha;
-            const size = 30 - i * 2;
-            ctx.beginPath();
-            ctx.arc(this.segments[i].x, this.segments[i].y, size / 2, 0, Math.PI * 2);
-            ctx.fill();
+        // Determine which sprite to use
+        const playerPrefix = this.playerId === 1 ? 'snake_p1' : 'snake_p2';
+        let spriteName = `${playerPrefix}_idle`;
+
+        if (this.inWater && !this.onGround) {
+            spriteName = `${playerPrefix}_swimming`;
+        } else if (this.state === 'rolling') {
+            spriteName = `${playerPrefix}_rolling`;
+        } else if (this.state === 'grabbing') {
+            spriteName = `${playerPrefix}_extended`;
+        } else if (!this.onGround) {
+            spriteName = `${playerPrefix}_jumping`;
         }
-        ctx.globalAlpha = 1;
+
+        const sprite = assets.get(spriteName);
 
         // Flashing when invulnerable
         if (this.invulnerable > 0 && Math.floor(this.invulnerable / 5) % 2 === 0) {
             ctx.globalAlpha = 0.5;
         }
 
-        // Draw main body
-        ctx.fillStyle = this.color;
-        if (this.state === 'rolling') {
-            // Draw as coiled disc
+        if (sprite && sprite.complete) {
+            // Draw sprite
             ctx.save();
-            ctx.translate(this.x + this.width / 2, this.y + this.height / 2);
-            ctx.rotate((Date.now() / 50) % (Math.PI * 2));
-            ctx.fillRect(-this.width / 2, -this.height / 2, this.width, this.height);
-            ctx.strokeStyle = '#000';
-            ctx.lineWidth = 2;
-            ctx.strokeRect(-this.width / 2, -this.height / 2, this.width, this.height);
+
+            // Position and scale
+            const spriteScale = 0.8;
+            const spriteWidth = sprite.width * spriteScale;
+            const spriteHeight = sprite.height * spriteScale;
+
+            // Center the sprite on the entity position
+            const drawX = this.x + this.width / 2 - spriteWidth / 2;
+            const drawY = this.y + this.height / 2 - spriteHeight / 2;
+
+            // Flip sprite if facing left
+            if (this.facing < 0) {
+                ctx.translate(drawX + spriteWidth / 2, drawY + spriteHeight / 2);
+                ctx.scale(-1, 1);
+                ctx.translate(-(drawX + spriteWidth / 2), -(drawY + spriteHeight / 2));
+            }
+
+            // Add rotation effect for rolling
+            if (this.state === 'rolling') {
+                ctx.translate(drawX + spriteWidth / 2, drawY + spriteHeight / 2);
+                ctx.rotate((Date.now() / 50) % (Math.PI * 2));
+                ctx.drawImage(sprite, -spriteWidth / 2, -spriteHeight / 2, spriteWidth, spriteHeight);
+            } else {
+                ctx.drawImage(sprite, drawX, drawY, spriteWidth, spriteHeight);
+            }
+
             ctx.restore();
         } else {
+            // Fallback to colored rectangle if sprite not loaded
+            ctx.fillStyle = this.color;
             ctx.fillRect(this.x, this.y, this.width, this.height);
             ctx.strokeStyle = '#000';
             ctx.lineWidth = 2;
             ctx.strokeRect(this.x, this.y, this.width, this.height);
         }
-
-        // Draw eyes
-        ctx.fillStyle = '#fff';
-        const eyeX = this.facing > 0 ? this.x + this.width - 15 : this.x + 10;
-        ctx.beginPath();
-        ctx.arc(eyeX, this.y + 12, 5, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.fillStyle = '#000';
-        ctx.beginPath();
-        ctx.arc(eyeX + this.facing * 2, this.y + 12, 2, 0, Math.PI * 2);
-        ctx.fill();
 
         ctx.globalAlpha = 1;
     }
@@ -472,24 +570,37 @@ class Frog extends Entity {
     draw(ctx) {
         if (!this.alive) return;
 
-        ctx.fillStyle = this.color;
-        ctx.fillRect(this.x, this.y, this.width, this.height);
-        ctx.strokeStyle = '#000';
-        ctx.lineWidth = 2;
-        ctx.strokeRect(this.x, this.y, this.width, this.height);
+        // Determine which sprite to use
+        let spriteName;
+        if (this.type === 'large') {
+            spriteName = 'frog_large_boss';
+        } else if (this.type === 'medium') {
+            spriteName = this.onGround ? 'frog_medium_idle' : 'frog_medium_jumping';
+        } else {
+            spriteName = this.onGround ? 'frog_small_idle' : 'frog_small_jumping';
+        }
 
-        // Eyes
-        ctx.fillStyle = '#fff';
-        ctx.beginPath();
-        ctx.arc(this.x + this.width * 0.3, this.y + this.height * 0.3, this.width * 0.12, 0, Math.PI * 2);
-        ctx.arc(this.x + this.width * 0.7, this.y + this.height * 0.3, this.width * 0.12, 0, Math.PI * 2);
-        ctx.fill();
+        const sprite = assets.get(spriteName);
 
-        ctx.fillStyle = '#000';
-        ctx.beginPath();
-        ctx.arc(this.x + this.width * 0.3, this.y + this.height * 0.3, this.width * 0.06, 0, Math.PI * 2);
-        ctx.arc(this.x + this.width * 0.7, this.y + this.height * 0.3, this.width * 0.06, 0, Math.PI * 2);
-        ctx.fill();
+        if (sprite && sprite.complete) {
+            // Draw sprite
+            const spriteScale = this.type === 'small' ? 0.4 : this.type === 'medium' ? 0.5 : 0.7;
+            const spriteWidth = sprite.width * spriteScale;
+            const spriteHeight = sprite.height * spriteScale;
+
+            // Center the sprite on the entity position
+            const drawX = this.x + this.width / 2 - spriteWidth / 2;
+            const drawY = this.y + this.height / 2 - spriteHeight / 2;
+
+            ctx.drawImage(sprite, drawX, drawY, spriteWidth, spriteHeight);
+        } else {
+            // Fallback to colored rectangle if sprite not loaded
+            ctx.fillStyle = this.color;
+            ctx.fillRect(this.x, this.y, this.width, this.height);
+            ctx.strokeStyle = '#000';
+            ctx.lineWidth = 2;
+            ctx.strokeRect(this.x, this.y, this.width, this.height);
+        }
 
         // Health bar
         if (this.health < this.maxHealth) {
@@ -518,19 +629,28 @@ class LilyPad {
     }
 
     draw(ctx) {
-        ctx.fillStyle = '#2E7D32';
-        ctx.beginPath();
-        ctx.ellipse(this.x + this.width / 2, this.y + this.height / 2, this.width / 2, this.height / 2, 0, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.strokeStyle = '#1B5E20';
-        ctx.lineWidth = 2;
-        ctx.stroke();
+        // Choose sprite based on size
+        const spriteName = this.width > 90 ? 'lilypad_large' : 'lilypad_small';
+        const sprite = assets.get(spriteName);
 
-        // Flower detail
-        ctx.fillStyle = '#FFB6C1';
-        ctx.beginPath();
-        ctx.arc(this.x + this.width / 2, this.y + this.height / 2, 8, 0, Math.PI * 2);
-        ctx.fill();
+        if (sprite && sprite.complete) {
+            const spriteScale = 0.5;
+            const spriteWidth = sprite.width * spriteScale;
+            const spriteHeight = sprite.height * spriteScale;
+            const drawX = this.x + this.width / 2 - spriteWidth / 2;
+            const drawY = this.y + this.height / 2 - spriteHeight / 2;
+
+            ctx.drawImage(sprite, drawX, drawY, spriteWidth, spriteHeight);
+        } else {
+            // Fallback
+            ctx.fillStyle = '#2E7D32';
+            ctx.beginPath();
+            ctx.ellipse(this.x + this.width / 2, this.y + this.height / 2, this.width / 2, this.height / 2, 0, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.strokeStyle = '#1B5E20';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+        }
     }
 }
 
@@ -614,21 +734,67 @@ function initGame() {
     resizeCanvas();
     window.addEventListener('resize', resizeCanvas);
 
-    // Create players
-    game.players = [
-        new Snake(100, 300, 1, '#4CAF50'),
-        new Snake(200, 300, 2, '#FF9800')
-    ];
+    // Show loading message
+    const startBtn = document.getElementById('startBtn');
+    const originalText = startBtn.textContent;
+    startBtn.textContent = 'Loading...';
+    startBtn.disabled = true;
 
-    // Create initial lily pads
-    createLilyPads();
+    // Load all assets first
+    assets.load(() => {
+        // Assets loaded successfully
+        startBtn.textContent = originalText;
+        startBtn.disabled = false;
+        console.log('All assets loaded successfully!');
 
-    // Setup controls
-    setupControls();
+        // Create players
+        game.players = [
+            new Snake(100, 300, 1, '#4CAF50'),
+            new Snake(200, 300, 2, '#FF9800')
+        ];
 
-    // UI event listeners
-    document.getElementById('startBtn').addEventListener('click', startGame);
-    document.getElementById('restartBtn').addEventListener('click', restartGame);
+        // Create initial lily pads
+        createLilyPads();
+
+        // Setup controls
+        setupControls();
+
+        // UI event listeners
+        startBtn.addEventListener('click', startGame);
+        document.getElementById('restartBtn').addEventListener('click', restartGame);
+
+        // Draw title screen with graphics
+        drawTitleScreen();
+    });
+}
+
+function drawTitleScreen() {
+    const ctx = game.ctx;
+
+    // Draw background
+    const bg = assets.get('title_background');
+    if (bg && bg.complete) {
+        // Scale background to fill canvas
+        ctx.drawImage(bg, 0, 0, CONFIG.CANVAS_WIDTH, CONFIG.CANVAS_HEIGHT);
+    } else {
+        // Fallback gradient
+        const gradient = ctx.createLinearGradient(0, 0, 0, CONFIG.CANVAS_HEIGHT);
+        gradient.addColorStop(0, '#2C5F2D');
+        gradient.addColorStop(1, '#1C3F1D');
+        ctx.fillStyle = gradient;
+        ctx.fillRect(0, 0, CONFIG.CANVAS_WIDTH, CONFIG.CANVAS_HEIGHT);
+    }
+
+    // Draw logo
+    const logo = assets.get('logo_title');
+    if (logo && logo.complete) {
+        const logoScale = 1.5;
+        const logoWidth = logo.width * logoScale;
+        const logoHeight = logo.height * logoScale;
+        const logoX = (CONFIG.CANVAS_WIDTH - logoWidth) / 2;
+        const logoY = 100;
+        ctx.drawImage(logo, logoX, logoY, logoWidth, logoHeight);
+    }
 }
 
 function resizeCanvas() {
