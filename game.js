@@ -139,13 +139,6 @@ class Entity {
             this.vy += CONFIG.GRAVITY;
         }
 
-        // Check water
-        this.inWater = this.y + this.height > CONFIG.WATER_LEVEL;
-
-        // Apply friction
-        const friction = this.inWater ? CONFIG.WATER_FRICTION : CONFIG.FRICTION;
-        this.vx *= friction;
-
         // Update position
         this.x += this.vx;
         this.y += this.vy;
@@ -154,6 +147,25 @@ class Entity {
         if (this.x < 0) this.x = 0;
         if (this.x + this.width > CONFIG.CANVAS_WIDTH) this.x = CONFIG.CANVAS_WIDTH - this.width;
 
+        // Check lily pad collisions FIRST
+        this.onGround = false;
+        let onLilyPad = false;
+        for (const pad of game.lilyPads) {
+            // Check if entity is on or near the lily pad (with tolerance for bobbing)
+            const isNearPad = this.x < pad.x + pad.width &&
+                             this.x + this.width > pad.x &&
+                             this.y + this.height >= pad.y - 5 &&  // 5px tolerance above
+                             this.y + this.height <= pad.y + 15;   // 15px tolerance below
+
+            if (isNearPad && this.vy >= 0) {
+                this.y = pad.y - this.height;
+                this.vy = 0;
+                this.onGround = true;
+                onLilyPad = true;
+                break;
+            }
+        }
+
         // Water surface
         if (this.y + this.height > CONFIG.WATER_LEVEL + 50) {
             this.y = CONFIG.WATER_LEVEL + 50 - this.height;
@@ -161,21 +173,12 @@ class Entity {
             this.onGround = true;
         }
 
-        // Check lily pad collisions
-        this.onGround = false;
-        for (const pad of game.lilyPads) {
-            if (this.collidesWith(pad) && this.vy >= 0 && this.y + this.height - this.vy <= pad.y + 10) {
-                this.y = pad.y - this.height;
-                this.vy = 0;
-                this.onGround = true;
-                break;
-            }
-        }
+        // Check water - but NOT if on lily pad
+        this.inWater = !onLilyPad && this.y + this.height > CONFIG.WATER_LEVEL;
 
-        // Ground check (water surface acts as ground when sinking)
-        if (this.inWater && this.y + this.height >= CONFIG.WATER_LEVEL + 50) {
-            this.onGround = true;
-        }
+        // Apply friction
+        const friction = this.inWater ? CONFIG.WATER_FRICTION : CONFIG.FRICTION;
+        this.vx *= friction;
     }
 
     collidesWith(other) {
@@ -409,17 +412,23 @@ class Snake extends Entity {
         const playerPrefix = this.playerId === 1 ? 'snake_p1' : 'snake_p2';
         let spriteName = `${playerPrefix}_idle`;
 
-        if (this.inWater && !this.onGround) {
-            spriteName = `${playerPrefix}_swimming`;
-        } else if (this.state === 'rolling') {
+        if (this.state === 'rolling') {
             spriteName = `${playerPrefix}_rolling`;
         } else if (this.state === 'grabbing') {
             spriteName = `${playerPrefix}_extended`;
+        } else if (this.inWater) {
+            spriteName = `${playerPrefix}_swimming`;
         } else if (!this.onGround) {
-            spriteName = `${playerPrefix}_jumping`;
+            // P2 doesn't have jumping sprite, use idle
+            spriteName = this.playerId === 1 ? `${playerPrefix}_jumping` : `${playerPrefix}_idle`;
         }
 
-        const sprite = assets.get(spriteName);
+        let sprite = assets.get(spriteName);
+
+        // Fallback to idle if sprite doesn't exist (e.g., P1 swimming)
+        if (!sprite || !sprite.complete) {
+            sprite = assets.get(`${playerPrefix}_idle`);
+        }
 
         // Flashing when invulnerable
         if (this.invulnerable > 0 && Math.floor(this.invulnerable / 5) % 2 === 0) {
@@ -430,10 +439,10 @@ class Snake extends Entity {
             // Draw sprite
             ctx.save();
 
-            // Position and scale
-            const spriteScale = 0.8;
-            const spriteWidth = sprite.width * spriteScale;
-            const spriteHeight = sprite.height * spriteScale;
+            // Draw sprite at entity size (swimming sprites slightly larger)
+            const sizeMultiplier = this.inWater ? 1.5 : 1.0;
+            const spriteWidth = this.width * sizeMultiplier;
+            const spriteHeight = this.height * sizeMultiplier;
 
             // Center the sprite on the entity position
             const drawX = this.x + this.width / 2 - spriteWidth / 2;
@@ -583,10 +592,9 @@ class Frog extends Entity {
         const sprite = assets.get(spriteName);
 
         if (sprite && sprite.complete) {
-            // Draw sprite
-            const spriteScale = this.type === 'small' ? 0.4 : this.type === 'medium' ? 0.5 : 0.7;
-            const spriteWidth = sprite.width * spriteScale;
-            const spriteHeight = sprite.height * spriteScale;
+            // Draw sprite at entity size
+            const spriteWidth = this.width;
+            const spriteHeight = this.height;
 
             // Center the sprite on the entity position
             const drawX = this.x + this.width / 2 - spriteWidth / 2;
@@ -619,13 +627,13 @@ class LilyPad {
         this.x = x;
         this.y = y;
         this.width = width;
-        this.height = 15;
+        this.height = 25;
         this.bob = Math.random() * Math.PI * 2;
     }
 
     update() {
         this.bob += 0.02;
-        this.y += Math.sin(this.bob) * 0.3;
+        this.y += Math.sin(this.bob) * 0.15;
     }
 
     draw(ctx) {
@@ -634,9 +642,9 @@ class LilyPad {
         const sprite = assets.get(spriteName);
 
         if (sprite && sprite.complete) {
-            const spriteScale = 0.5;
-            const spriteWidth = sprite.width * spriteScale;
-            const spriteHeight = sprite.height * spriteScale;
+            // Draw sprite at lilypad size
+            const spriteWidth = this.width;
+            const spriteHeight = this.height;
             const drawX = this.x + this.width / 2 - spriteWidth / 2;
             const drawY = this.y + this.height / 2 - spriteHeight / 2;
 

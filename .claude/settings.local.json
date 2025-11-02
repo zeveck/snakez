@@ -43,7 +43,11 @@
       "Bash(do node -c \"$file\")",
       "Bash(echo:*)",
       "Bash(xargs:*)",
-      "Bash(npx http-server:*)"
+      "Bash(npx http-server:*)",
+      "Bash(npm start)",
+      "Bash(pkill:*)",
+      "Bash(lsof:*)",
+      "Bash(identify:*)"
     ],
     "deny": []
   },

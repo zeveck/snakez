@@ -219,15 +219,70 @@ body {
     color: #fff;
 }
 
-/* Mobile Controls */
+/* Mobile/Desktop Controls */
 .mobile-only {
     display: none;
+}
+
+.desktop-only {
+    display: block;
 }
 
 @media (max-width: 768px), (pointer: coarse) {
     .mobile-only {
         display: block;
     }
+    .desktop-only {
+        display: none;
+    }
+}
+
+#desktopControls {
+    position: absolute;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 40px;
+    justify-content: center;
+    align-items: center;
+    padding: 12px 24px;
+    background: rgba(0, 0, 0, 0.7);
+    border-radius: 8px;
+    font-size: 14px;
+    color: #fff;
+    z-index: 10;
+}
+
+.control-hint {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.player-label {
+    font-weight: bold;
+    padding: 4px 8px;
+    border-radius: 4px;
+}
+
+.p1-label {
+    background: #4CAF50;
+    color: #fff;
+}
+
+.p2-label {
+    background: #FF9800;
+    color: #fff;
+}
+
+.keys {
+    background: rgba(255, 255, 255, 0.2);
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-weight: bold;
+    font-family: monospace;
+    border: 1px solid rgba(255, 255, 255, 0.3);
 }
 
 #mobileControls {
@@ -236,13 +291,19 @@ body {
     left: 0;
     right: 0;
     height: 220px;
-    display: grid;
+    display: none;
     grid-template-columns: 1fr 1fr;
     grid-template-rows: auto auto;
     gap: 10px;
     padding: 10px;
     background: linear-gradient(to top, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0.4) 100%);
     pointer-events: all;
+}
+
+@media (max-width: 768px), (pointer: coarse) {
+    #mobileControls {
+        display: grid;
+    }
 }
 
 .joystick-container {

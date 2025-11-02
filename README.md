@@ -1,6 +1,6 @@
 # Snake Warriors 🐍⚔️
 
-**Version 0.2.0** - A swamp-based 2-player cooperative beat 'em up arcade game
+**Version 0.3.0** - A swamp-based 2-player cooperative beat 'em up arcade game
 
 Fight alongside your friend as serpent warriors defending the swamp from endless waves of hostile frogs!
 
@@ -132,7 +132,18 @@ All pixel art graphics are located in the `/graphics` folder:
 
 ## 📝 Version History
 
-### v0.2.0 (Current)
+### v0.3.0 (Current)
+- 🐛 Fixed sprite sizing issues - all sprites now display at correct entity dimensions
+- 🐛 Fixed sprite flickering on lily pads - improved collision detection with tolerance for bobbing
+- 🐛 Fixed water detection - snakes on lily pads are never marked as swimming
+- 🐛 Fixed missing P2 jumping sprite - uses idle sprite as fallback
+- 🐛 Fixed missing P1 swimming sprite - uses idle sprite with 1.5x size multiplier
+- 🎨 Improved lily pad visuals - increased height (15→25px) and reduced bobbing motion
+- 💻 Added desktop control hints - keyboard controls displayed at bottom of game screen
+- 📱 Improved responsive design - mobile controls hidden on desktop, desktop controls hidden on mobile
+- 🎨 Enhanced swimming sprites - 50% larger for better visibility in water
+
+### v0.2.0
 - ✨ Added complete pixel art sprite system
 - ✨ Integrated 23 custom graphics for all game elements
 - ✨ Implemented sprite-based animations for all characters
