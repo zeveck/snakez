@@ -36,6 +36,7 @@ const assets = {
         // Player 2 (Orange Snake)
         'snake_p2_idle': 'graphics/snake_p2_idle.png',
         'snake_p2_extended': 'graphics/snake_p2_extended.png',
+        'snake_p2_jumping': 'graphics/snake_p2_jumping.png',
         'snake_p2_biting': 'graphics/snake_p2_biting.png',
         'snake_p2_rolling': 'graphics/snake_p2_rolling.png',
         'snake_p2_swimming': 'graphics/snake_p2_swimming.png',
@@ -204,7 +205,6 @@ class Snake extends Entity {
         this.rollCooldown = 0;
         this.grabTimer = 0;
         this.grabCooldown = 0;
-        this.grabbedEnemy = null;
         this.invulnerable = 0;
         this.segments = [];
         this.initSegments();
@@ -219,6 +219,13 @@ class Snake extends Entity {
 
     update() {
         super.update();
+
+        // Track how long we've been on ground to avoid jittering sprites
+        if (this.onGround) {
+            this.groundedFrames++;
+        } else {
+            this.groundedFrames = 0;
+        }
 
         // Update timers
         if (this.rollTimer > 0) this.rollTimer--;
@@ -256,14 +263,6 @@ class Snake extends Entity {
 
         // Update body segments
         this.updateSegments();
-
-        // Keep grabbed enemy with snake
-        if (this.grabbedEnemy && this.state === 'grabbing') {
-            this.grabbedEnemy.x = this.x + this.width / 2 - this.grabbedEnemy.width / 2;
-            this.grabbedEnemy.y = this.y - this.grabbedEnemy.height;
-            this.grabbedEnemy.vx = 0;
-            this.grabbedEnemy.vy = 0;
-        }
     }
 
     handleNormalMovement(playerInput) {
@@ -319,41 +318,28 @@ class Snake extends Entity {
 
     startGrab() {
         this.state = 'grabbing';
-        this.grabTimer = 60;
-        this.grabCooldown = 90;
+        this.grabTimer = 20; // Tongue whip duration
+        this.grabCooldown = 60;
 
-        // Check for nearby enemy
+        // Damage enemies in range with tongue whip
         for (const enemy of game.enemies) {
-            if (enemy.alive && this.canGrab(enemy)) {
-                this.grabbedEnemy = enemy;
-                enemy.grabbed = true;
-                break;
+            if (enemy.alive && this.inGrabRange(enemy)) {
+                this.hitEnemy(enemy, 30, this.facing * 12, -8);
             }
-        }
-
-        if (!this.grabbedEnemy) {
-            this.grabTimer = 20; // Short whiff animation
         }
     }
 
-    canGrab(enemy) {
+    inGrabRange(enemy) {
         const dx = enemy.x - this.x;
         const dy = enemy.y - this.y;
         const dist = Math.sqrt(dx * dx + dy * dy);
-        return dist < 80 && !enemy.grabbed;
+        const facingEnemy = (dx > 0 && this.facing > 0) || (dx < 0 && this.facing < 0);
+        return dist < 100 && facingEnemy;
     }
 
     handleGrabState() {
         if (this.grabTimer === 0) {
             this.state = 'idle';
-            if (this.grabbedEnemy) {
-                // Throw enemy
-                this.grabbedEnemy.grabbed = false;
-                this.grabbedEnemy.vx = this.facing * 20;
-                this.grabbedEnemy.vy = -15;
-                this.hitEnemy(this.grabbedEnemy, 35, this.facing * 20, -15);
-                this.grabbedEnemy = null;
-            }
             this.width = 50;
             this.height = 40;
             return;
@@ -419,8 +405,7 @@ class Snake extends Entity {
         } else if (this.inWater) {
             spriteName = `${playerPrefix}_swimming`;
         } else if (!this.onGround) {
-            // P2 doesn't have jumping sprite, use idle
-            spriteName = this.playerId === 1 ? `${playerPrefix}_jumping` : `${playerPrefix}_idle`;
+            spriteName = `${playerPrefix}_jumping`;
         }
 
         let sprite = assets.get(spriteName);
@@ -430,8 +415,8 @@ class Snake extends Entity {
             sprite = assets.get(`${playerPrefix}_idle`);
         }
 
-        // Flashing when invulnerable
-        if (this.invulnerable > 0 && Math.floor(this.invulnerable / 5) % 2 === 0) {
+        // Flashing when invulnerable (but not during roll, which has its own visual)
+        if (this.invulnerable > 0 && this.state !== 'rolling' && Math.floor(this.invulnerable / 5) % 2 === 0) {
             ctx.globalAlpha = 0.5;
         }
 
@@ -439,10 +424,32 @@ class Snake extends Entity {
             // Draw sprite
             ctx.save();
 
-            // Draw sprite at entity size (swimming sprites slightly larger)
-            const sizeMultiplier = this.inWater ? 1.5 : 1.0;
-            const spriteWidth = this.width * sizeMultiplier;
-            const spriteHeight = this.height * sizeMultiplier;
+            // Calculate sprite size preserving aspect ratio
+            // Adjust size based on state
+            let targetSize;
+            if (this.state === 'rolling') {
+                targetSize = 40; // Smaller for rolling ball
+            } else if (this.inWater) {
+                targetSize = 80; // Larger for swimming visibility
+            } else if (this.state === 'grabbing') {
+                targetSize = 70; // Medium size for extended tongue
+            } else {
+                targetSize = 55; // Default idle/jumping size
+            }
+
+            // Scale sprite to fit target size while preserving aspect ratio
+            const spriteAspect = sprite.width / sprite.height;
+            let spriteWidth, spriteHeight;
+
+            if (spriteAspect > 1) {
+                // Wider than tall - scale based on width
+                spriteWidth = targetSize;
+                spriteHeight = spriteWidth / spriteAspect;
+            } else {
+                // Taller than wide - scale based on height
+                spriteHeight = targetSize;
+                spriteWidth = spriteHeight * spriteAspect;
+            }
 
             // Center the sprite on the entity position
             const drawX = this.x + this.width / 2 - spriteWidth / 2;
@@ -487,9 +494,10 @@ class Frog extends Entity {
         this.alive = true;
         this.jumpTimer = 0;
         this.jumpCooldown = Math.random() * 60 + 40;
-        this.grabbed = false;
         this.color = type === 'small' ? '#4CAF50' : type === 'medium' ? '#2196F3' : '#FF5722';
         this.attackTimer = 0;
+        this.facing = 1; // 1 = right, -1 = left
+        this.groundedFrames = 0; // Track how long we've been on ground
 
         // Type specific properties
         if (type === 'small') {
@@ -508,9 +516,23 @@ class Frog extends Entity {
     }
 
     update() {
-        if (!this.alive || this.grabbed) return;
+        if (!this.alive) return;
 
         super.update();
+
+        // Track how long we've been on ground to avoid jittering sprites
+        if (this.onGround) {
+            this.groundedFrames++;
+        } else {
+            this.groundedFrames = 0;
+        }
+
+        // Track how long we've been on ground to avoid jittering sprites
+        if (this.onGround) {
+            this.groundedFrames++;
+        } else {
+            this.groundedFrames = 0;
+        }
 
         // AI behavior
         this.jumpTimer++;
@@ -559,6 +581,7 @@ class Frog extends Entity {
     jumpTowards(target) {
         const dx = target.x - this.x;
         const direction = dx > 0 ? 1 : -1;
+        this.facing = direction;
         this.vx = direction * (Math.random() * 3 + 2);
         this.vy = -this.jumpPower;
     }
@@ -580,27 +603,57 @@ class Frog extends Entity {
         if (!this.alive) return;
 
         // Determine which sprite to use
+        // Require 3 frames on ground before showing idle sprite to prevent jittering
+        const isInAir = this.groundedFrames < 3;
         let spriteName;
         if (this.type === 'large') {
             spriteName = 'frog_large_boss';
         } else if (this.type === 'medium') {
-            spriteName = this.onGround ? 'frog_medium_idle' : 'frog_medium_jumping';
+            spriteName = isInAir ? 'frog_medium_jumping' : 'frog_medium_idle';
         } else {
-            spriteName = this.onGround ? 'frog_small_idle' : 'frog_small_jumping';
+            spriteName = isInAir ? 'frog_small_jumping' : 'frog_small_idle';
         }
 
         const sprite = assets.get(spriteName);
 
         if (sprite && sprite.complete) {
-            // Draw sprite at entity size
-            const spriteWidth = this.width;
-            const spriteHeight = this.height;
+            // Calculate sprite size preserving aspect ratio
+            // Use entity dimensions as target size, with boost for small jumping frogs
+            let targetSize = Math.max(this.width, this.height);
+
+            // Make small jumping frogs more visible
+            if (this.type === 'small' && isInAir) {
+                targetSize = 50; // Larger for jumping small frogs
+            }
+
+            // Scale sprite to fit target size while preserving aspect ratio
+            const spriteAspect = sprite.width / sprite.height;
+            let spriteWidth, spriteHeight;
+
+            if (spriteAspect > 1) {
+                // Wider than tall - scale based on width
+                spriteWidth = targetSize;
+                spriteHeight = spriteWidth / spriteAspect;
+            } else {
+                // Taller than wide - scale based on height
+                spriteHeight = targetSize;
+                spriteWidth = spriteHeight * spriteAspect;
+            }
 
             // Center the sprite on the entity position
             const drawX = this.x + this.width / 2 - spriteWidth / 2;
             const drawY = this.y + this.height / 2 - spriteHeight / 2;
 
+            // Flip sprite based on facing direction
+            ctx.save();
+            if (this.facing < 0) {
+                ctx.translate(drawX + spriteWidth / 2, drawY + spriteHeight / 2);
+                ctx.scale(-1, 1);
+                ctx.translate(-(drawX + spriteWidth / 2), -(drawY + spriteHeight / 2));
+            }
+
             ctx.drawImage(sprite, drawX, drawY, spriteWidth, spriteHeight);
+            ctx.restore();
         } else {
             // Fallback to colored rectangle if sprite not loaded
             ctx.fillStyle = this.color;
@@ -642,9 +695,12 @@ class LilyPad {
         const sprite = assets.get(spriteName);
 
         if (sprite && sprite.complete) {
-            // Draw sprite at lilypad size
+            // Calculate sprite size preserving aspect ratio
+            // Scale to match lily pad width
+            const spriteAspect = sprite.width / sprite.height;
             const spriteWidth = this.width;
-            const spriteHeight = this.height;
+            const spriteHeight = spriteWidth / spriteAspect;
+
             const drawX = this.x + this.width / 2 - spriteWidth / 2;
             const drawY = this.y + this.height / 2 - spriteHeight / 2;
 
@@ -835,6 +891,14 @@ function setupControls() {
     window.addEventListener('keydown', (e) => {
         game.keys[e.key.toLowerCase()] = true;
 
+        // Start game with Enter on title screen
+        if (e.key === 'Enter' && !game.running) {
+            const startBtn = document.getElementById('startBtn');
+            if (startBtn && !startBtn.disabled) {
+                startBtn.click();
+            }
+        }
+
         // Player 1 controls (WASD + F/G)
         if (e.key.toLowerCase() === 'f') input.player1.roll = true;
         if (e.key.toLowerCase() === 'g') input.player1.grab = true;
@@ -977,8 +1041,7 @@ function startGame() {
         player.rollCooldown = 0;
         player.grabTimer = 0;
         player.grabCooldown = 0;
-        player.grabbedEnemy = null;
-        player.invulnerable = 120;
+        player.invulnerable = 0;
         player.onGround = false;
         player.width = 50;
         player.height = 40;

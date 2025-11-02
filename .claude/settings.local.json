@@ -47,7 +47,10 @@
       "Bash(npm start)",
       "Bash(pkill:*)",
       "Bash(lsof:*)",
-      "Bash(identify:*)"
+      "Bash(identify:*)",
+      "Bash(for f in graphics/frog_*.png graphics/lilypad*.png)",
+      "Bash(do file \"$f\")",
+      "Bash(done)"
     ],
     "deny": []
   },

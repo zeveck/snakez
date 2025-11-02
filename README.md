@@ -1,10 +1,10 @@
-# Snake Warriors 🐍⚔️
+# Snake Style 🐍⚔️
 
-**Version 0.3.0** - A swamp-based 2-player cooperative beat 'em up arcade game
+**Version 0.3.1** - A swamp-based 2-player cooperative beat 'em up arcade game
 
 Fight alongside your friend as serpent warriors defending the swamp from endless waves of hostile frogs!
 
-![Snake Warriors](graphics/logo_title.png)
+![Snake Style](graphics/logo_title.png)
 
 ## 🎮 Game Features
 
@@ -132,7 +132,16 @@ All pixel art graphics are located in the `/graphics` folder:
 
 ## 📝 Version History
 
-### v0.3.0 (Current)
+### v0.3.1 (Current)
+- 🎨 Rebranded game from "Snake Warriors" to "Snake Style"
+- ✨ Updated start button text to "Slither In"
+- ✨ Added Player 2 jumping sprite integration
+- 🐛 Fixed frog sprite flickering at jump peak - now uses stable ground detection
+- 🐛 Fixed frog sprite jittering when landing in water - added 3-frame stabilization
+- 🎨 Increased small jumping frog sprite size (40px → 50px) for better visibility
+- ⌨️ Added Enter key support to start game from title screen
+
+### v0.3.0
 - 🐛 Fixed sprite sizing issues - all sprites now display at correct entity dimensions
 - 🐛 Fixed sprite flickering on lily pads - improved collision detection with tolerance for bobbing
 - 🐛 Fixed water detection - snakes on lily pads are never marked as swimming

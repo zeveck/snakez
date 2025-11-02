@@ -1,6 +1,6 @@
 {
-  "name": "snake-warriors",
-  "version": "0.3.0",
+  "name": "snake-style",
+  "version": "0.3.1",
   "description": "Snake Warriors - A swamp-based 2-player beat 'em up game featuring serpent heroes battling waves of frogs",
   "scripts": {
     "start": "npx http-server -p 1990 -a 0.0.0.0"
