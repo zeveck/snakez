@@ -1,10 +1,12 @@
 # Snake Style 🐍⚔️
 
-**Version 0.3.1** - A swamp-based 2-player cooperative beat 'em up arcade game
+**Version 0.4.0** - A swamp-based 2-player cooperative beat 'em up arcade game
 
 Fight alongside your friend as serpent warriors defending the swamp from endless waves of hostile frogs!
 
-![Snake Style](graphics/logo_title.png)
+<p align="center">
+  <img src="graphics/logo_title.png" alt="Snake Style" width="600">
+</p>
 
 ## 🎮 Game Features
 
@@ -15,6 +17,8 @@ Fight alongside your friend as serpent warriors defending the swamp from endless
 - **Multiple Enemy Types** - Small, medium, and boss-sized frogs with unique behaviors
 - **Dynamic Water Mechanics** - Jump between lily pads or swim through the swamp
 - **Retro Pixel Art** - Beautiful hand-crafted sprites and animations
+- **Audio System** - Dynamic music system with title and gameplay tracks
+- **Volume Controls** - Customizable overall, music, and SFX volume levels
 
 ### Combat Moves
 Each snake warrior has two powerful attacks:
@@ -48,12 +52,13 @@ Each snake warrior has two powerful attacks:
 
 ## 🎯 How to Play
 
-1. **Start the Game** - Click "Slither In" or press Enter on the title screen
-2. **Survive the Waves** - Defeat all frogs to progress to the next wave
-3. **Build Combos** - Attack enemies in quick succession to multiply your score
-4. **Use the Environment** - Jump on lily pads to avoid the water and gain tactical advantage
-5. **Coordinate Attacks** - Work with your partner to overwhelm enemy groups
-6. **Watch Your Health** - Avoid frog attacks and use invulnerability frames wisely
+1. **Start the Game** - Click "Start" or press Enter on the title screen
+2. **Audio Controls** - Click the speaker icon (lower left) to toggle audio; right-click for volume controls
+3. **Survive the Waves** - Defeat all frogs to progress to the next wave
+4. **Build Combos** - Attack enemies in quick succession to multiply your score
+5. **Use the Environment** - Jump on lily pads to avoid the water and gain tactical advantage
+6. **Coordinate Attacks** - Work with your partner to overwhelm enemy groups
+7. **Watch Your Health** - Avoid frog attacks and use invulnerability frames wisely
 
 ## 🏆 Scoring System
 
@@ -132,9 +137,20 @@ All pixel art graphics are located in the `/graphics` folder:
 
 ## 📝 Version History
 
-### v0.3.1 (Current)
+### v0.4.0 (Current)
+- 🎨 New canvas-based title screen with pixel art logo and snake sprites
+- ✨ Interactive title screen - click to make snakes jump
+- 🎵 Added audio system with title screen and gameplay music
+- 🔊 Volume controls with overall, music, and SFX sliders
+- 🎶 Background music restarts at the beginning of each wave
+- ⏱️ Game over screen returns to title after 10 seconds of inactivity
+- 🖱️ Right-click or long-press audio button for volume controls
+- 💾 Audio settings persisted via localStorage
+- 🔇 Audio defaults to muted with 60% overall volume
+- 🧹 Removed water slowdown tip from instructions
+
+### v0.3.1
 - 🎨 Rebranded game from "Snake Warriors" to "Snake Style"
-- ✨ Updated start button text to "Slither In"
 - ✨ Added Player 2 jumping sprite integration
 - 🐛 Fixed frog sprite flickering at jump peak - now uses stable ground detection
 - 🐛 Fixed frog sprite jittering when landing in water - added 3-frame stabilization

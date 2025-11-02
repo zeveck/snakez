@@ -50,7 +50,8 @@
       "Bash(identify:*)",
       "Bash(for f in graphics/frog_*.png graphics/lilypad*.png)",
       "Bash(do file \"$f\")",
-      "Bash(done)"
+      "Bash(done)",
+      "Bash(sed:*)"
     ],
     "deny": []
   },

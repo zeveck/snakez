@@ -98,6 +98,287 @@ const assets = {
     }
 };
 
+// Audio Manager
+const audioManager = {
+    titleMusic: null,
+    bgMusic: null,
+    currentTrack: null,
+    muted: true, // Default to muted
+    toggleButton: null,
+    hasInteracted: false,
+    volumeMenu: null,
+    longPressTimer: null,
+    
+    // Volume levels (0-1)
+    volumes: {
+        overall: 0.6,
+        music: 1.0,
+        sfx: 1.0
+    },
+
+    init() {
+        this.titleMusic = document.getElementById('titleMusic');
+        this.bgMusic = document.getElementById('bgMusic');
+        this.toggleButton = document.getElementById('audioToggle');
+        this.volumeMenu = document.getElementById('volumeMenu');
+
+        // Load settings from localStorage
+        this.loadSettings();
+
+        // Set initial button state
+        this.updateButtonState();
+
+        // Initialize volume sliders
+        this.initVolumeSliders();
+
+        // Add click handler for mute toggle
+        this.toggleButton.addEventListener('click', (e) => {
+            e.preventDefault();
+            this.toggle();
+        });
+
+        // Add right-click handler
+        this.toggleButton.addEventListener('contextmenu', (e) => {
+            e.preventDefault();
+            this.showVolumeMenu();
+        });
+
+        // Add long press handler for mobile
+        this.toggleButton.addEventListener('touchstart', (e) => {
+            this.longPressTimer = setTimeout(() => {
+                this.showVolumeMenu();
+            }, 500);
+        });
+
+        this.toggleButton.addEventListener('touchend', () => {
+            if (this.longPressTimer) {
+                clearTimeout(this.longPressTimer);
+                this.longPressTimer = null;
+            }
+        });
+
+        this.toggleButton.addEventListener('touchmove', () => {
+            if (this.longPressTimer) {
+                clearTimeout(this.longPressTimer);
+                this.longPressTimer = null;
+            }
+        });
+
+        // Close menu when clicking outside
+        document.addEventListener('click', (e) => {
+            if (this.volumeMenu.classList.contains('visible') && 
+                !this.volumeMenu.contains(e.target) && 
+                !this.toggleButton.contains(e.target)) {
+                this.hideVolumeMenu();
+            }
+        });
+
+        // Apply initial volumes
+        this.updateVolumes();
+
+        // Handle first user interaction for autoplay
+        const startAudioOnInteraction = () => {
+            this.hasInteracted = true;
+            // Try to start title music if unmuted and on title screen
+            if (!this.muted) {
+                const titleScreen = document.getElementById('titleScreen');
+                if (titleScreen && titleScreen.classList.contains('active')) {
+                    this.playTitle();
+                }
+            }
+            // Remove listener after first interaction
+            document.removeEventListener('click', startAudioOnInteraction);
+            document.removeEventListener('keydown', startAudioOnInteraction);
+            document.removeEventListener('touchstart', startAudioOnInteraction);
+        };
+        document.addEventListener('click', startAudioOnInteraction);
+        document.addEventListener('keydown', startAudioOnInteraction);
+        document.addEventListener('touchstart', startAudioOnInteraction);
+    },
+
+    initVolumeSliders() {
+        const overallSlider = document.getElementById('overallVolume');
+        const musicSlider = document.getElementById('musicVolume');
+        const sfxSlider = document.getElementById('sfxVolume');
+
+        const overallValue = document.getElementById('overallValue');
+        const musicValue = document.getElementById('musicValue');
+        const sfxValue = document.getElementById('sfxValue');
+
+        // Set initial values
+        overallSlider.value = this.volumes.overall * 100;
+        musicSlider.value = this.volumes.music * 100;
+        sfxSlider.value = this.volumes.sfx * 100;
+
+        overallValue.textContent = Math.round(this.volumes.overall * 100);
+        musicValue.textContent = Math.round(this.volumes.music * 100);
+        sfxValue.textContent = Math.round(this.volumes.sfx * 100);
+
+        // Add event listeners
+        overallSlider.addEventListener('input', (e) => {
+            const val = parseInt(e.target.value);
+            overallValue.textContent = val;
+            this.volumes.overall = val / 100;
+            this.updateVolumes();
+            this.saveSettings();
+        });
+
+        musicSlider.addEventListener('input', (e) => {
+            const val = parseInt(e.target.value);
+            musicValue.textContent = val;
+            this.volumes.music = val / 100;
+            this.updateVolumes();
+            this.saveSettings();
+        });
+
+        sfxSlider.addEventListener('input', (e) => {
+            const val = parseInt(e.target.value);
+            sfxValue.textContent = val;
+            this.volumes.sfx = val / 100;
+            this.saveSettings();
+        });
+    },
+
+    loadSettings() {
+        const savedMuted = localStorage.getItem('snakeStyleAudioMuted');
+        this.muted = savedMuted === null ? true : savedMuted === 'true';
+
+        const savedVolumes = localStorage.getItem('snakeStyleVolumes');
+        if (savedVolumes) {
+            try {
+                const parsed = JSON.parse(savedVolumes);
+                this.volumes.overall = parsed.overall ?? 0.6;
+                this.volumes.music = parsed.music ?? 1.0;
+                this.volumes.sfx = parsed.sfx ?? 1.0;
+            } catch (e) {
+                console.log('Failed to load volume settings:', e);
+            }
+        }
+    },
+
+    saveSettings() {
+        localStorage.setItem('snakeStyleAudioMuted', this.muted);
+        localStorage.setItem('snakeStyleVolumes', JSON.stringify(this.volumes));
+    },
+
+    showVolumeMenu() {
+        this.volumeMenu.classList.add('visible');
+    },
+
+    hideVolumeMenu() {
+        this.volumeMenu.classList.remove('visible');
+    },
+
+    toggle() {
+        this.muted = !this.muted;
+        this.saveSettings();
+        this.updateButtonState();
+
+        if (this.muted) {
+            // Just pause, don't reset position
+            this.pause();
+        } else {
+            // Check if we have a current track to resume
+            if (this.currentTrack) {
+                // Resume from where it was paused
+                this.resume();
+            } else {
+                // No track was playing, start appropriate music for current screen
+                const titleScreen = document.getElementById('titleScreen');
+                const gameScreen = document.getElementById('gameScreen');
+                
+                if (titleScreen && titleScreen.classList.contains('active')) {
+                    this.playTitle();
+                } else if (gameScreen && gameScreen.classList.contains('active') && game.running) {
+                    this.playBackground();
+                }
+            }
+        }
+    },
+
+    updateButtonState() {
+        if (this.muted) {
+            this.toggleButton.classList.remove('unmuted');
+        } else {
+            this.toggleButton.classList.add('unmuted');
+        }
+    },
+
+    updateVolumes() {
+        // Apply overall and music-specific volumes
+        const musicVol = this.volumes.overall * this.volumes.music;
+        
+        if (this.titleMusic) this.titleMusic.volume = musicVol * 0.6;
+        if (this.bgMusic) this.bgMusic.volume = musicVol * 0.5;
+    },
+
+    playTitle() {
+        if (this.muted) return;
+        if (!this.hasInteracted) return; // Wait for user interaction
+
+        // Only start if not already playing title music
+        if (this.currentTrack === this.titleMusic && !this.titleMusic.paused) {
+            return; // Already playing, don't restart
+        }
+
+        this.stopAll();
+        this.currentTrack = this.titleMusic;
+        if (this.titleMusic) {
+            this.titleMusic.currentTime = 0;
+            this.titleMusic.play().catch(e => console.log('Title music play failed:', e));
+        }
+    },
+
+
+    playBackground() {
+        if (this.muted) return;
+        if (!this.hasInteracted) return; // Wait for user interaction
+
+        // Only start if not already playing background music
+        if (this.currentTrack === this.bgMusic && !this.bgMusic.paused) {
+            return; // Already playing, don't restart
+        }
+
+        this.stopAll();
+        this.currentTrack = this.bgMusic;
+        if (this.bgMusic) {
+            this.bgMusic.currentTime = 0;
+            this.bgMusic.play().catch(e => console.log('Background music play failed:', e));
+        }
+    },
+
+
+    pause() {
+        // Just pause without resetting time
+        if (this.titleMusic && !this.titleMusic.paused) {
+            this.titleMusic.pause();
+        }
+        if (this.bgMusic && !this.bgMusic.paused) {
+            this.bgMusic.pause();
+        }
+    },
+
+    resume() {
+        // Resume current track from where it was paused
+        if (this.currentTrack && this.currentTrack.paused) {
+            this.currentTrack.play().catch(e => console.log('Audio resume failed:', e));
+        }
+    },
+
+    stopAll() {
+        if (this.titleMusic) {
+            this.titleMusic.pause();
+            this.titleMusic.currentTime = 0;
+        }
+        if (this.bgMusic) {
+            this.bgMusic.pause();
+            this.bgMusic.currentTime = 0;
+        }
+        this.currentTrack = null;
+    }
+};
+
+
 // Game State
 const game = {
     canvas: null,
@@ -113,6 +394,8 @@ const game = {
     touches: {},
     lastTime: 0,
     screen: 'title',
+    gameOverTimer: null,
+    titleSnakes: { left: { y: 0, vy: 0, jumping: false }, right: { y: 0, vy: 0, jumping: false } },
 };
 
 // Input handlers
@@ -792,6 +1075,12 @@ function createDeathEffect(x, y) {
 // Game functions
 function initGame() {
     game.canvas = document.getElementById('gameCanvas');
+    game.titleCanvas = document.getElementById('titleCanvas');
+    game.titleCtx = game.titleCanvas.getContext('2d');
+
+    // Set title canvas size
+    game.titleCanvas.width = CONFIG.CANVAS_WIDTH;
+    game.titleCanvas.height = CONFIG.CANVAS_HEIGHT;
     game.ctx = game.canvas.getContext('2d');
 
     // Set canvas size
@@ -811,6 +1100,9 @@ function initGame() {
         startBtn.disabled = false;
         console.log('All assets loaded successfully!');
 
+        // Initialize audio manager
+        audioManager.init();
+
         // Create players
         game.players = [
             new Snake(100, 300, 1, '#4CAF50'),
@@ -827,21 +1119,36 @@ function initGame() {
         startBtn.addEventListener('click', startGame);
         document.getElementById('restartBtn').addEventListener('click', restartGame);
 
+        // Add title screen click handler for snake jump animation
+        const titleScreen = document.getElementById('titleScreen');
+        const handleTitleClick = (e) => {
+            // Don't trigger if clicking the start button, instructions, or title overlay
+            if (e.target.id === 'startBtn' || 
+                e.target.closest('#instructions') || 
+                e.target.closest('.title-overlay')) {
+                return;
+            }
+            makeTitleSnakesJump();
+        };
+        titleScreen.addEventListener('click', handleTitleClick);
+        titleScreen.addEventListener('touchstart', handleTitleClick);
+
         // Draw title screen with graphics
         drawTitleScreen();
     });
 }
 
 function drawTitleScreen() {
-    const ctx = game.ctx;
+    const ctx = game.titleCtx;
+
+    // Play title screen music
+    audioManager.playTitle();
 
     // Draw background
     const bg = assets.get('title_background');
     if (bg && bg.complete) {
-        // Scale background to fill canvas
         ctx.drawImage(bg, 0, 0, CONFIG.CANVAS_WIDTH, CONFIG.CANVAS_HEIGHT);
     } else {
-        // Fallback gradient
         const gradient = ctx.createLinearGradient(0, 0, 0, CONFIG.CANVAS_HEIGHT);
         gradient.addColorStop(0, '#2C5F2D');
         gradient.addColorStop(1, '#1C3F1D');
@@ -849,16 +1156,95 @@ function drawTitleScreen() {
         ctx.fillRect(0, 0, CONFIG.CANVAS_WIDTH, CONFIG.CANVAS_HEIGHT);
     }
 
-    // Draw logo
+    // Update title snake animations
+    updateTitleSnakes();
+
+    // Draw left snake (P1 - Green)
+    const leftSprite = game.titleSnakes.left.jumping ?
+        assets.get('snake_p1_jumping') : assets.get('snake_p1_idle');
+    if (leftSprite && leftSprite.complete) {
+        const snakeSize = 85;
+        const snakeX = 270;
+        const snakeY = 200 + game.titleSnakes.left.y;
+        const aspect = leftSprite.width / leftSprite.height;
+        const width = snakeSize;
+        const height = width / aspect;
+        ctx.drawImage(leftSprite, snakeX - width/2, snakeY - height/2, width, height);
+    }
+
+    // Draw logo in center
     const logo = assets.get('logo_title');
     if (logo && logo.complete) {
-        const logoScale = 1.5;
+        const logoScale = 0.3;
         const logoWidth = logo.width * logoScale;
         const logoHeight = logo.height * logoScale;
         const logoX = (CONFIG.CANVAS_WIDTH - logoWidth) / 2;
-        const logoY = 100;
+        const logoY = 0;
         ctx.drawImage(logo, logoX, logoY, logoWidth, logoHeight);
     }
+
+    // Draw right snake (P2 - Orange) facing left
+    const rightSprite = game.titleSnakes.right.jumping ?
+        assets.get('snake_p2_jumping') : assets.get('snake_p2_idle');
+    if (rightSprite && rightSprite.complete) {
+        const snakeSize = 85;
+        const snakeX = CONFIG.CANVAS_WIDTH - 270;
+        const snakeY = 200 + game.titleSnakes.right.y;
+        const aspect = rightSprite.width / rightSprite.height;
+        const width = snakeSize;
+        const height = width / aspect;
+
+        // Flip horizontally to face left
+        ctx.save();
+        ctx.translate(snakeX, snakeY);
+        ctx.scale(-1, 1);
+        ctx.drawImage(rightSprite, -width/2, -height/2, width, height);
+        ctx.restore();
+    }
+}
+
+function updateTitleSnakes() {
+    const gravity = 0.6;
+    const groundY = 0;
+
+    // Update left snake
+    if (game.titleSnakes.left.jumping) {
+        game.titleSnakes.left.vy += gravity;
+        game.titleSnakes.left.y += game.titleSnakes.left.vy;
+        
+        if (game.titleSnakes.left.y >= groundY) {
+            game.titleSnakes.left.y = groundY;
+            game.titleSnakes.left.vy = 0;
+            game.titleSnakes.left.jumping = false;
+        }
+    }
+
+    // Update right snake
+    if (game.titleSnakes.right.jumping) {
+        game.titleSnakes.right.vy += gravity;
+        game.titleSnakes.right.y += game.titleSnakes.right.vy;
+        
+        if (game.titleSnakes.right.y >= groundY) {
+            game.titleSnakes.right.y = groundY;
+            game.titleSnakes.right.vy = 0;
+            game.titleSnakes.right.jumping = false;
+        }
+    }
+
+    // Redraw title screen if snakes are animating
+    if (game.titleSnakes.left.jumping || game.titleSnakes.right.jumping) {
+        requestAnimationFrame(drawTitleScreen);
+    }
+}
+
+function makeTitleSnakesJump() {
+    game.titleSnakes.left.jumping = true;
+    game.titleSnakes.left.vy = -12;
+    
+    game.titleSnakes.right.jumping = true;
+    game.titleSnakes.right.vy = -12;
+    
+    requestAnimationFrame(drawTitleScreen);
 }
 
 function resizeCanvas() {
@@ -1021,6 +1407,8 @@ function updateKeyboardInput() {
 
 function startGame() {
     setScreen('game');
+    audioManager.hasInteracted = true;
+    audioManager.playBackground();
     game.running = true;
     game.wave = 1;
     game.score = 0;
@@ -1052,7 +1440,22 @@ function startGame() {
 }
 
 function restartGame() {
+    // Clear game over timer if active
+    if (game.gameOverTimer) {
+        clearTimeout(game.gameOverTimer);
+        game.gameOverTimer = null;
+    }
     startGame();
+}
+
+function returnToTitle() {
+    // Clear game over timer
+    if (game.gameOverTimer) {
+        clearTimeout(game.gameOverTimer);
+        game.gameOverTimer = null;
+    }
+    setScreen('title');
+    audioManager.playTitle();
 }
 
 function setScreen(screen) {
@@ -1067,6 +1470,7 @@ function setScreen(screen) {
 }
 
 function spawnWave() {
+    audioManager.playBackground();
     const count = 3 + game.wave * 2;
     for (let i = 0; i < count; i++) {
         const x = Math.random() * (CONFIG.CANVAS_WIDTH - 100) + 50;
@@ -1182,9 +1586,17 @@ function updateHUD() {
 
 function gameOver() {
     game.running = false;
+    audioManager.stopAll();
     document.getElementById('finalScore').textContent = `Score: ${game.score}`;
     document.getElementById('finalWave').textContent = `Waves Completed: ${game.wave - 1}`;
-    setTimeout(() => setScreen('gameover'), 1000);
+    setTimeout(() => {
+        setScreen('gameover');
+        // Start timer to return to title screen after 10 seconds
+        if (game.gameOverTimer) clearTimeout(game.gameOverTimer);
+        game.gameOverTimer = setTimeout(() => {
+            returnToTitle();
+        }, 10000);
+    }, 1000);
 }
 
 // Initialize when DOM is ready

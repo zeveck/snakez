@@ -451,3 +451,252 @@ body {
     z-index: 1000;
     pointer-events: none;
 }
+
+/* Audio Toggle Button */
+
+.audio-toggle {
+    position: fixed;
+    bottom: 10px;
+    left: 10px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.8rem;
+    transition: all 0.2s ease;
+    padding: 8px;
+    opacity: 0.5;
+}
+
+
+
+.audio-toggle:hover {
+    opacity: 1;
+    transform: scale(1.05);
+}
+
+
+
+
+
+
+
+
+
+
+
+.audio-toggle:hover {
+    background: rgba(0, 0, 0, 0.9);
+    border-color: #4CAF50;
+    transform: scale(1.1);
+}
+
+.audio-toggle:active {
+    transform: scale(0.95);
+}
+
+.audio-icon {
+    display: none;
+    line-height: 1;
+}
+
+/* Show muted icon by default */
+.audio-toggle .audio-icon.muted {
+    display: block;
+}
+
+/* When unmuted, show unmuted icon */
+.audio-toggle.unmuted .audio-icon.muted {
+    display: none;
+}
+
+.audio-toggle.unmuted .audio-icon.unmuted {
+    display: block;
+}
+
+/* Audio Toggle Button */
+.audio-toggle {
+    position: fixed;
+    bottom: 10px;
+    left: 10px;
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    background: rgba(0, 0, 0, 0.7);
+    border: 2px solid rgba(76, 175, 80, 0.5);
+    cursor: pointer;
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    transition: all 0.3s ease;
+    padding: 0;
+}
+
+.audio-toggle:hover {
+    background: rgba(0, 0, 0, 0.9);
+    border-color: #4CAF50;
+    transform: scale(1.1);
+}
+
+.audio-toggle:active {
+    transform: scale(0.95);
+}
+
+.audio-icon {
+    display: none;
+    line-height: 1;
+}
+
+/* Show muted icon by default */
+.audio-toggle .audio-icon.muted {
+    display: block;
+}
+
+/* When unmuted, show unmuted icon */
+.audio-toggle.unmuted .audio-icon.muted {
+    display: none;
+}
+
+.audio-toggle.unmuted .audio-icon.unmuted {
+    display: block;
+}
+
+/* Audio Tooltip */
+.audio-tooltip {
+    position: absolute;
+    bottom: 60px;
+    left: 0;
+    background: rgba(0, 0, 0, 0.9);
+    color: #fff;
+    padding: 8px 12px;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    white-space: nowrap;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s ease;
+    z-index: 1001;
+}
+
+.audio-toggle:hover .audio-tooltip {
+    opacity: 1;
+}
+
+/* Volume Control Menu */
+.volume-menu {
+    position: fixed;
+    bottom: 70px;
+    left: 10px;
+    background: rgba(0, 0, 0, 0.95);
+    border: 2px solid #4CAF50;
+    border-radius: 12px;
+    padding: 16px;
+    min-width: 220px;
+    display: none;
+    z-index: 1001;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6);
+}
+
+.volume-menu.visible {
+    display: block;
+}
+
+.volume-menu-header {
+    font-size: 1.1rem;
+    font-weight: bold;
+    color: #4CAF50;
+    margin-bottom: 12px;
+    text-align: center;
+}
+
+.volume-control {
+    margin-bottom: 12px;
+}
+
+.volume-control:last-child {
+    margin-bottom: 0;
+}
+
+.volume-control label {
+    display: block;
+    color: #fff;
+    font-size: 0.9rem;
+    margin-bottom: 6px;
+    font-family: 'Courier New', monospace;
+}
+
+.volume-control input[type="range"] {
+    width: 100%;
+    height: 6px;
+    border-radius: 3px;
+    background: rgba(255, 255, 255, 0.2);
+    outline: none;
+    -webkit-appearance: none;
+    cursor: pointer;
+}
+
+.volume-control input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: #4CAF50;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.volume-control input[type="range"]::-webkit-slider-thumb:hover {
+    background: #45a049;
+}
+
+.volume-control input[type="range"]::-moz-range-thumb {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: #4CAF50;
+    cursor: pointer;
+    border: none;
+    transition: background 0.2s;
+}
+
+.volume-control input[type="range"]::-moz-range-thumb:hover {
+    background: #45a049;
+}
+
+/* Title Screen Canvas */
+#titleCanvas {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 0;
+}
+
+#titleScreen .title-overlay {
+    position: relative;
+    z-index: 1;
+    padding-top: 400px;
+    pointer-events: none;
+}
+
+#titleScreen .title-overlay * {
+    pointer-events: auto;
+}
+
+#titleScreen #instructions {
+    position: relative;
+    z-index: 1;
+}
+
+/* Hide text elements since we're drawing on canvas */
+#titleScreen .title-overlay h1,
+#titleScreen .title-overlay .subtitle {
+    display: none;
+}
