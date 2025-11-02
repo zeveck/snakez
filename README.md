@@ -24,23 +24,23 @@ Each snake warrior has two powerful attacks:
   - Grants temporary invulnerability
   - Perfect for escaping tight situations
 
-- **🦎 Tongue Grab (G/L)** - Extend your tongue to grab and throw enemies
-  - Grab enemies from a distance
-  - Hold them in place
-  - Throw for 35 damage with knockback
-  - Great for crowd control
+- **👅 Tongue Whip (G/L)** - Lash out with your tongue to strike enemies
+  - Instant ranged attack (100px reach)
+  - Deals 30 damage with knockback
+  - Strike enemies in the direction you're facing
+  - Great for keeping enemies at bay
 
 ## 🕹️ Controls
 
 ### Player 1 (Green Snake)
 - **Movement**: `W` `A` `S` `D`
 - **Roll Attack**: `F`
-- **Grab Attack**: `G`
+- **Whip Attack**: `G`
 
 ### Player 2 (Orange Snake)
 - **Movement**: Arrow Keys `↑` `←` `↓` `→`
 - **Roll Attack**: `K`
-- **Grab Attack**: `L`
+- **Whip Attack**: `L`
 
 ### Mobile Touch Controls
 - **Virtual Joysticks** - On-screen joysticks for movement
@@ -48,7 +48,7 @@ Each snake warrior has two powerful attacks:
 
 ## 🎯 How to Play
 
-1. **Start the Game** - Click "Start Game" on the title screen
+1. **Start the Game** - Click "Slither In" or press Enter on the title screen
 2. **Survive the Waves** - Defeat all frogs to progress to the next wave
 3. **Build Combos** - Attack enemies in quick succession to multiply your score
 4. **Use the Environment** - Jump on lily pads to avoid the water and gain tactical advantage
@@ -166,16 +166,16 @@ All pixel art graphics are located in the `/graphics` folder:
 - 👥 2-player local multiplayer
 - 🌊 Basic water and lily pad mechanics
 - 🐸 Three frog enemy types
-- 💥 Roll and grab attack systems
+- 💥 Roll and whip attack systems
 - 🏆 Combo and scoring system
 
 ## 🎮 Game Tips
 
 1. **Combo Mastery** - Keep your combo going by attacking continuously
 2. **Roll for Safety** - Use roll attack to escape when surrounded
-3. **Grab Strategy** - Pull enemies away from your partner
+3. **Whip Strategy** - Use the tongue whip to keep enemies at a safe distance
 4. **Platform Advantage** - Fight on lily pads to avoid water slowdown
-5. **Team Coordination** - One player grabs while the other rolls through
+5. **Team Coordination** - One player whips while the other rolls through
 6. **Boss Focus** - Prioritize large frogs to prevent being overwhelmed
 
 ## 🐛 Known Issues
@@ -188,8 +188,9 @@ MIT License - Feel free to modify and share!
 
 ## 🙏 Credits
 
-- Game Design & Programming: [Your Name]
-- Pixel Art Graphics: Custom designed
+- Game Design: Sera Galvin & Rich Conlan
+- Programming: Claude Code
+- Pixel Art Graphics: ChatGPT + manual edits as needed
 - Sound Effects: TBD
 - Music: TBD
 
