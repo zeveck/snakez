@@ -51,7 +51,9 @@
       "Bash(for f in graphics/frog_*.png graphics/lilypad*.png)",
       "Bash(do file \"$f\")",
       "Bash(done)",
-      "Bash(sed:*)"
+      "Bash(sed:*)",
+      "Bash(for f in graphics/snake_p1_idle.png graphics/snake_p2_idle.png)",
+      "Bash(do echo $f:)"
     ],
     "deny": []
   },

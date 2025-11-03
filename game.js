@@ -46,8 +46,10 @@ const assets = {
         'frog_small_jumping': 'graphics/frog_small_jumping.png',
         'frog_medium_idle': 'graphics/frog_medium_idle.png',
         'frog_medium_jumping': 'graphics/frog_medium_jumping.png',
-        'frog_large_boss': 'graphics/frog_large_boss.png',
-        'frog_poison_dart': 'graphics/frog_poison_dart.png',
+        'frog_large_boss_idle': 'graphics/frog_large_boss_idle.png',
+        'frog_large_boss_jumping': 'graphics/frog_large_boss_jumping.png',
+        'frog_poison_dart_idle': 'graphics/frog_poison_dart_idle.png',
+        'frog_poison_dart_jumping': 'graphics/frog_poison_dart_jumping.png',
 
         // Environment
         'lilypad_small': 'graphics/lilypad_small.png',
@@ -148,21 +150,21 @@ const audioManager = {
             this.longPressTimer = setTimeout(() => {
                 this.showVolumeMenu();
             }, 500);
-        });
+        }, { passive: true });
 
         this.toggleButton.addEventListener('touchend', () => {
             if (this.longPressTimer) {
                 clearTimeout(this.longPressTimer);
                 this.longPressTimer = null;
             }
-        });
+        }, { passive: true });
 
         this.toggleButton.addEventListener('touchmove', () => {
             if (this.longPressTimer) {
                 clearTimeout(this.longPressTimer);
                 this.longPressTimer = null;
             }
-        });
+        }, { passive: true });
 
         // Close menu when clicking outside
         document.addEventListener('click', (e) => {
@@ -193,7 +195,7 @@ const audioManager = {
         };
         document.addEventListener('click', startAudioOnInteraction);
         document.addEventListener('keydown', startAudioOnInteraction);
-        document.addEventListener('touchstart', startAudioOnInteraction);
+        document.addEventListener('touchstart', startAudioOnInteraction, { passive: true });
     },
 
     initVolumeSliders() {
@@ -444,12 +446,27 @@ class Entity {
                              this.y + this.height >= pad.y - 5 &&  // 5px tolerance above
                              this.y + this.height <= pad.y + 15;   // 15px tolerance below
 
-            if (isNearPad && this.vy >= 0) {
+            if (isNearPad && this.vy >= 0 && !this.droppingThrough) {
                 this.y = pad.y - this.height;
                 this.vy = 0;
                 this.onGround = true;
                 onLilyPad = true;
                 break;
+            }
+        }
+        // Reset droppingThrough flag if we've passed below all lily pads
+        if (this.droppingThrough) {
+            let stillDroppingThrough = false;
+            for (const pad of game.lilyPads) {
+                const overlapsHorizontally = this.x < pad.x + pad.width && this.x + this.width > pad.x;
+                const isAboveOrNear = this.y + this.height <= pad.y + 20;
+                if (overlapsHorizontally && isAboveOrNear) {
+                    stillDroppingThrough = true;
+                    break;
+                }
+            }
+            if (!stillDroppingThrough) {
+                this.droppingThrough = false;
             }
         }
 
@@ -494,6 +511,7 @@ class Snake extends Entity {
         this.grabCooldown = 0;
         this.invulnerable = 0;
         this.segments = [];
+        this.droppingThrough = false; // Flag for dropping through lily pads
         this.initSegments();
     }
 
@@ -573,6 +591,20 @@ class Snake extends Entity {
             this.onGround = false;
             if (this.inWater) {
                 createSplash(this.x + this.width / 2, this.y + this.height);
+            }
+        }
+
+        // Drop through lily pad
+        if (playerInput.y > 0 && this.onGround && !this.inWater && !this.droppingThrough) {
+            // Check if on a lily pad (not on water surface)
+            for (const pad of game.lilyPads) {
+                const isOnPad = this.x < pad.x + pad.width &&
+                               this.x + this.width > pad.x &&
+                               Math.abs(this.y + this.height - pad.y) < 5;
+                if (isOnPad) {
+                    this.droppingThrough = true;
+                    break;
+                }
             }
         }
 
@@ -800,15 +832,16 @@ class Frog extends Entity {
     constructor(x, y, type = 'small') {
         super(x, y, 30, 30);
         this.type = type;
-        this.health = type === 'small' ? 20 : type === 'medium' ? 40 : 80;
+        this.health = type === 'small' ? 20 : type === 'medium' ? 40 : type === 'poison_dart' ? 15 : 80;
         this.maxHealth = this.health;
         this.alive = true;
         this.jumpTimer = 0;
         this.jumpCooldown = Math.random() * 60 + 40;
-        this.color = type === 'small' ? '#4CAF50' : type === 'medium' ? '#2196F3' : '#FF5722';
+        this.color = type === 'small' ? '#4CAF50' : type === 'medium' ? '#2196F3' : type === 'poison_dart' ? '#FF00FF' : '#FF5722';
         this.attackTimer = 0;
         this.facing = 1; // 1 = right, -1 = left
         this.groundedFrames = 0; // Track how long we've been on ground
+        this.hueRotation = type === 'poison_dart' ? Math.floor(Math.random() * 360) : 0; // Random color for poison darts
 
         // Type specific properties
         if (type === 'small') {
@@ -819,6 +852,10 @@ class Frog extends Entity {
             this.width = 40;
             this.height = 40;
             this.jumpPower = 12;
+        } else if (type === 'poison_dart') {
+            this.width = 25;
+            this.height = 25;
+            this.jumpPower = 14;
         } else {
             this.width = 60;
             this.height = 60;
@@ -865,7 +902,7 @@ class Frog extends Entity {
             const dist = Math.sqrt(dx * dx + dy * dy);
 
             if (dist < 35) {
-                target.takeDamage(this.type === 'small' ? 3 : this.type === 'medium' ? 6 : 12);
+                target.takeDamage(this.type === 'small' ? 3 : this.type === 'medium' ? 6 : this.type === 'poison_dart' ? 10 : 12);
                 this.attackTimer = 0;
             }
         }
@@ -906,19 +943,22 @@ class Frog extends Entity {
 
     die() {
         this.alive = false;
-        game.score += this.type === 'small' ? 10 : this.type === 'medium' ? 25 : 50;
+        game.score += this.type === 'small' ? 10 : this.type === 'medium' ? 25 : this.type === 'poison_dart' ? 35 : 50;
         createDeathEffect(this.x + this.width / 2, this.y + this.height / 2);
     }
 
     draw(ctx) {
         if (!this.alive) return;
 
+
         // Determine which sprite to use
         // Require 3 frames on ground before showing idle sprite to prevent jittering
         const isInAir = this.groundedFrames < 3;
         let spriteName;
         if (this.type === 'large') {
-            spriteName = 'frog_large_boss';
+            spriteName = isInAir ? 'frog_large_boss_jumping' : 'frog_large_boss_idle';
+        } else if (this.type === 'poison_dart') {
+            spriteName = isInAir ? 'frog_poison_dart_jumping' : 'frog_poison_dart_idle';
         } else if (this.type === 'medium') {
             spriteName = isInAir ? 'frog_medium_jumping' : 'frog_medium_idle';
         } else {
@@ -957,6 +997,10 @@ class Frog extends Entity {
 
             // Flip sprite based on facing direction
             ctx.save();
+            // Apply hue rotation for poison dart frogs
+            if (this.type === 'poison_dart') {
+                ctx.filter = `hue-rotate(${this.hueRotation}deg)`;
+            }
             if (this.facing < 0) {
                 ctx.translate(drawX + spriteWidth / 2, drawY + spriteHeight / 2);
                 ctx.scale(-1, 1);
@@ -1230,8 +1274,8 @@ function initGame() {
 
             // Check if clicked on left snake (P1)
             const leftSnakeX = 270;
-            const leftSnakeY = 200;
-            const snakeSize = 85;
+            const leftSnakeY = 195;
+            const snakeSize = 66; // Match green snake size
             const leftHitbox = {
                 x: leftSnakeX - snakeSize / 2,
                 y: leftSnakeY - snakeSize / 2,
@@ -1241,7 +1285,7 @@ function initGame() {
 
             // Check if clicked on right snake (P2)
             const rightSnakeX = CONFIG.CANVAS_WIDTH - 270;
-            const rightSnakeY = 200;
+            const rightSnakeY = 195;
             const rightHitbox = {
                 x: rightSnakeX - snakeSize / 2,
                 y: rightSnakeY - snakeSize / 2,
@@ -1269,7 +1313,7 @@ function initGame() {
             makeTitleSnakesJump();
         };
         titleScreen.addEventListener('click', handleTitleClick);
-        titleScreen.addEventListener('touchstart', handleTitleClick);
+        titleScreen.addEventListener('touchstart', handleTitleClick, { passive: true });
 
         // Add hover cursor for snakes
         const handleTitleHover = (e) => {
@@ -1279,16 +1323,16 @@ function initGame() {
             const mouseX = (e.clientX - rect.left) * scaleX;
             const mouseY = (e.clientY - rect.top) * scaleY;
 
-            const snakeSize = 85;
+            const snakeSize = 66; // Match green snake size
             const leftSnakeHitbox = {
                 x: 270 - snakeSize / 2,
-                y: 200 - snakeSize / 2,
+                y: 195 - snakeSize / 2,
                 width: snakeSize,
                 height: snakeSize
             };
             const rightSnakeHitbox = {
                 x: (CONFIG.CANVAS_WIDTH - 270) - snakeSize / 2,
-                y: 200 - snakeSize / 2,
+                y: 195 - snakeSize / 2,
                 width: snakeSize,
                 height: snakeSize
             };
@@ -1333,9 +1377,9 @@ function drawTitleScreen() {
     const leftSprite = game.titleSnakes.left.jumping ?
         assets.get('snake_p1_jumping') : assets.get('snake_p1_idle');
     if (leftSprite && leftSprite.complete) {
-        const snakeSize = 85;
+        const snakeSize = 66; // Smaller size for green snake
         const snakeX = 270;
-        const snakeY = 200 + game.titleSnakes.left.y;
+        const snakeY = 195 + game.titleSnakes.left.y;
         const aspect = leftSprite.width / leftSprite.height;
         const width = snakeSize;
         const height = width / aspect;
@@ -1349,7 +1393,7 @@ function drawTitleScreen() {
         const logoWidth = logo.width * logoScale;
         const logoHeight = logo.height * logoScale;
         const logoX = (CONFIG.CANVAS_WIDTH - logoWidth) / 2;
-        const logoY = 0;
+        const logoY = -10;
         ctx.drawImage(logo, logoX, logoY, logoWidth, logoHeight);
     }
 
@@ -1357,9 +1401,9 @@ function drawTitleScreen() {
     const rightSprite = game.titleSnakes.right.jumping ?
         assets.get('snake_p2_jumping') : assets.get('snake_p2_idle');
     if (rightSprite && rightSprite.complete) {
-        const snakeSize = 85;
+        const snakeSize = 98;
         const snakeX = CONFIG.CANVAS_WIDTH - 270;
-        const snakeY = 200 + game.titleSnakes.right.y;
+        const snakeY = 195 + game.titleSnakes.right.y;
         const aspect = rightSprite.width / rightSprite.height;
         const width = snakeSize;
         const height = width / aspect;
@@ -1494,8 +1538,12 @@ function setupControls() {
         }
     });
 
-    // Mobile touch controls
-    setupMobileControls();
+    // Mobile touch controls - only register on mobile/touch devices
+    const isMobile = window.matchMedia('(max-width: 768px)').matches ||
+                     window.matchMedia('(pointer: coarse)').matches;
+    if (isMobile) {
+        setupMobileControls();
+    }
 }
 
 function setupMobileControls() {
@@ -1509,28 +1557,25 @@ function setupMobileControls() {
         let touchId = null;
 
         joystick.addEventListener('touchstart', (e) => {
-            e.preventDefault();
             touchId = e.changedTouches[0].identifier;
             handleJoystickMove(e.changedTouches[0], joystick, stick, playerId);
-        });
+        }, { passive: true });
 
         joystick.addEventListener('touchmove', (e) => {
-            e.preventDefault();
             for (let touch of e.changedTouches) {
                 if (touch.identifier === touchId) {
                     handleJoystickMove(touch, joystick, stick, playerId);
                 }
             }
-        });
+        }, { passive: true });
 
         joystick.addEventListener('touchend', (e) => {
-            e.preventDefault();
             stick.style.transform = 'translate(-50%, -50%)';
             const playerInput = playerId === 1 ? input.player1 : input.player2;
             playerInput.x = 0;
             playerInput.y = 0;
             touchId = null;
-        });
+        }, { passive: true });
     });
 
     // Action buttons
@@ -1539,22 +1584,20 @@ function setupMobileControls() {
         const playerInput = playerId === 1 ? input.player1 : input.player2;
 
         btn.addEventListener('touchstart', (e) => {
-            e.preventDefault();
             if (btn.classList.contains('roll-btn')) {
                 playerInput.roll = true;
             } else if (btn.classList.contains('grab-btn')) {
                 playerInput.grab = true;
             }
-        });
+        }, { passive: true });
 
         btn.addEventListener('touchend', (e) => {
-            e.preventDefault();
             if (btn.classList.contains('roll-btn')) {
                 playerInput.roll = false;
             } else if (btn.classList.contains('grab-btn')) {
                 playerInput.grab = false;
             }
-        });
+        }, { passive: true });
     });
 }
 
@@ -1709,6 +1752,7 @@ function spawnWave() {
         const y = 100;
         let type = 'small';
         if (game.wave > 2 && Math.random() < 0.3) type = 'medium';
+        if (game.wave > 3 && Math.random() < 0.2) type = 'poison_dart';
         if (game.wave > 5 && Math.random() < 0.1) type = 'large';
 
         game.enemies.push(new Frog(x, y, type));

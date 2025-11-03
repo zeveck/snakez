@@ -1,6 +1,6 @@
 # Snake Style 🐍⚔️
 
-**Version 0.4.1** - A swamp-based 2-player cooperative beat 'em up arcade game
+**Version 0.4.3** - A swamp-based 2-player cooperative beat 'em up arcade game
 
 Fight alongside your friend as serpent warriors defending the swamp from endless waves of hostile frogs!
 
@@ -137,7 +137,12 @@ All pixel art graphics are located in the `/graphics` folder:
 
 ## 📝 Version History
 
-### v0.4.1 (Current)
+### v0.4.3 (Current)
+- 🐸 Added poison dart frogs as fast & deadly enemies (wave 4+, random colors)
+- 🎨 Moved green snake and title up 10 pixels on title screen
+- ⬇️ Added ability to drop through lily pads with down key
+
+### v0.4.2
 - 📱 Added comprehensive Open Graph and Twitter Card meta tags for social media sharing
 - 🔍 Added SEO meta tags including description, keywords, and structured data
 - 🌐 Added JSON-LD schema markup for search engines

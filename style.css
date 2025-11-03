@@ -126,6 +126,10 @@ body {
     margin: 20px 0;
 }
 
+.controls-section p {
+    font-size: clamp(0.75rem, 2vw, 0.95rem);
+}
+
 /* Game Screen */
 #gameScreen {
     background: #1a4d2e;
