@@ -5,6 +5,21 @@ All notable changes to Snake Style will be documented in this file.
 For the most up-to-date version history, see the "Version History" section in README.md.
 
 ## [0.4.0] - 2025-11-02
+## [0.4.1] - 2025-11-02
+
+### Added
+- Comprehensive Open Graph meta tags for Facebook, LinkedIn, and other social platforms
+- Twitter Card meta tags for enhanced Twitter sharing previews
+- SEO meta tags including description, keywords, author, and theme color
+- JSON-LD structured data for improved search engine indexing
+- Canonical URL to prevent duplicate content issues
+- Apple touch icon for iOS home screen bookmarks
+- Enhanced page title with more descriptive text
+
+### Changed
+- Improved meta description for better search engine results
+- Added Schema.org VideoGame structured data markup
+
 
 ### Added
 - Canvas-based title screen with pixel art logo and snake sprites

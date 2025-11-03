@@ -5,9 +5,63 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <title>Snake Style - Beat 'Em Up</title>
+
+    <!-- SEO Meta Tags -->
+    <meta name="description" content="Snake Style - A retro 2-player beat 'em up arcade game. Team up as serpent warriors to battle waves of hostile frogs in a swamp adventure. Features pixel art graphics, combo attacks, and local co-op gameplay.">
+    <meta name="keywords" content="snake game, beat em up, 2 player game, retro game, pixel art game, arcade game, browser game, local coop, snake vs frogs, swamp game">
+    <meta name="author" content="Sera Galvin & Rich Conlan">
+    <meta name="theme-color" content="#2C5F2D">
+
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://snakestyle.game/">
+    <meta property="og:title" content="Snake Style - Retro 2-Player Beat 'Em Up">
+    <meta property="og:description" content="Team up as serpent warriors in this retro pixel art beat 'em up! Battle waves of frogs in local co-op action with roll attacks, whip combos, and swamp platforming.">
+    <meta property="og:image" content="https://snakestyle.game/graphics/logo_title.png">
+    <meta property="og:image:width" content="800">
+    <meta property="og:image:height" content="400">
+    <meta property="og:site_name" content="Snake Style">
+
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary_large_image">
+    <meta property="twitter:url" content="https://snakestyle.game/">
+    <meta property="twitter:title" content="Snake Style - Retro 2-Player Beat 'Em Up">
+    <meta property="twitter:description" content="Team up as serpent warriors in this retro pixel art beat 'em up! Battle waves of frogs in local co-op action.">
+    <meta property="twitter:image" content="https://snakestyle.game/graphics/logo_title.png">
+
+    <title>Snake Style - Retro 2-Player Beat 'Em Up Arcade Game</title>
+    <link rel="canonical" href="https://snakestyle.game/">
     <link rel="icon" type="image/svg+xml" href="favicon.svg">
+    <link rel="apple-touch-icon" href="graphics/logo_title.png">
     <link rel="stylesheet" href="style.css">
+
+    <!-- Structured Data -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "VideoGame",
+      "name": "Snake Style",
+      "description": "A retro 2-player beat 'em up arcade game where serpent warriors battle waves of hostile frogs",
+      "gamePlatform": "Web Browser",
+      "numberOfPlayers": "2",
+      "playMode": "CoOp",
+      "genre": ["Beat 'em up", "Arcade", "Action"],
+      "image": "https://snakestyle.game/graphics/logo_title.png",
+      "author": {
+        "@type": "Person",
+        "name": "Sera Galvin & Rich Conlan"
+      },
+      "datePublished": "2025-11-02",
+      "inLanguage": "en",
+      "operatingSystem": "Any",
+      "applicationCategory": "Game",
+      "offers": {
+        "@type": "Offer",
+        "price": "0",
+        "priceCurrency": "USD"
+      }
+    }
+    </script>
 </head>
 <body>
     <div id="gameContainer">
@@ -109,7 +163,7 @@
         </div>
     </div>
 
-    <div id="version">v0.4.0</div>
+    <div id="version">v0.4.1</div>
 
     <!-- Audio Toggle Button -->
     <button id="audioToggle" class="audio-toggle" aria-label="Toggle audio">
