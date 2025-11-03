@@ -37,14 +37,14 @@ Each snake warrior has two powerful attacks:
 ## 🕹️ Controls
 
 ### Player 1 (Green Snake)
+- **Movement**: Arrow Keys `↑` `←` `↓` `→`
+- **Roll Attack**: `0` (zero key)
+- **Whip Attack**: `Right Ctrl`
+
+### Player 2 (Orange Snake)
 - **Movement**: `W` `A` `S` `D`
 - **Roll Attack**: `F`
 - **Whip Attack**: `G`
-
-### Player 2 (Orange Snake)
-- **Movement**: Arrow Keys `↑` `←` `↓` `→`
-- **Roll Attack**: `K`
-- **Whip Attack**: `L`
 
 ### Mobile Touch Controls
 - **Virtual Joysticks** - On-screen joysticks for movement

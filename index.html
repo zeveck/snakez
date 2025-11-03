@@ -73,9 +73,10 @@
             <div id="instructions">
                 <h2>How to Play</h2>
                 <div class="controls-section desktop-only">
+                    <p>Click Start for 2-player co-op, or click a snake for solo play</p>
                     <h3>Desktop Controls</h3>
-                    <p><strong>Player 1:</strong> WASD to move | F to roll attack | G to whip</p>
-                    <p><strong>Player 2:</strong> Arrow keys to move | K to roll attack | L to whip</p>
+                    <p><strong>Player 1 (Green Snake):</strong> Arrow keys to move | 0 to roll | Right Ctrl to whip</p>
+                    <p><strong>Player 2 (Orange Snake):</strong> WASD to move | F to roll | G to whip</p>
                 </div>
                 <div class="controls-section mobile-only">
                     <h3>Mobile Controls</h3>
@@ -116,17 +117,17 @@
 
             <!-- Desktop Controls Reminder -->
             <div id="desktopControls" class="desktop-only">
-                <div class="control-hint">
+                <div class="control-hint" id="p1Controls">
                     <span class="player-label p1-label">P1:</span>
+                    <span class="keys">Arrow Keys</span> Move
+                    <span class="keys">0</span> Roll
+                    <span class="keys">RCtrl</span> Whip
+                </div>
+                <div class="control-hint" id="p2Controls">
+                    <span class="player-label p2-label">P2:</span>
                     <span class="keys">WASD</span> Move
                     <span class="keys">F</span> Roll
                     <span class="keys">G</span> Whip
-                </div>
-                <div class="control-hint">
-                    <span class="player-label p2-label">P2:</span>
-                    <span class="keys">Arrow Keys</span> Move
-                    <span class="keys">K</span> Roll
-                    <span class="keys">L</span> Whip
                 </div>
             </div>
 

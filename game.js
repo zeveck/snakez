@@ -396,6 +396,9 @@ const game = {
     screen: 'title',
     gameOverTimer: null,
     titleSnakes: { left: { y: 0, vy: 0, jumping: false }, right: { y: 0, vy: 0, jumping: false } },
+    singlePlayer: false,
+    activePlayer: null, // 0 for P1, 1 for P2 in single player
+    isMobile: false,
 };
 
 // Input handlers
@@ -480,6 +483,7 @@ class Snake extends Entity {
         this.color = color;
         this.health = 100;
         this.maxHealth = 100;
+        this.dead = false;
         this.state = 'idle'; // idle, rolling, extended, grabbing
         this.facing = 1; // 1 = right, -1 = left
         this.combo = 0;
@@ -501,6 +505,11 @@ class Snake extends Entity {
     }
 
     update() {
+        // Don't update dead players
+        if (this.dead) {
+            return;
+        }
+
         super.update();
 
         // Track how long we've been on ground to avoid jittering sprites
@@ -656,10 +665,20 @@ class Snake extends Entity {
     }
 
     die() {
+        this.dead = true;
+        // Create death particle explosion
+        createPlayerDeathEffect(this.x + this.width / 2, this.y + this.height / 2);
+
         // Check game over
-        const alivePlayers = game.players.filter(p => p.health > 0);
-        if (alivePlayers.length === 0) {
+        if (game.singlePlayer) {
+            // In single player, death = immediate game over
             gameOver();
+        } else {
+            // In 2-player mode, check if both players are dead
+            const alivePlayers = game.players.filter(p => !p.dead);
+            if (alivePlayers.length === 0) {
+                gameOver();
+            }
         }
     }
 
@@ -677,6 +696,11 @@ class Snake extends Entity {
     }
 
     draw(ctx) {
+        // Don't render dead players
+        if (this.dead) {
+            return;
+        }
+
         // Determine which sprite to use
         const playerPrefix = this.playerId === 1 ? 'snake_p1' : 'snake_p2';
         let spriteName = `${playerPrefix}_idle`;
@@ -715,9 +739,13 @@ class Snake extends Entity {
             } else if (this.inWater) {
                 targetSize = 80; // Larger for swimming visibility
             } else if (this.state === 'grabbing') {
-                targetSize = 70; // Medium size for extended tongue
+                // Both whipping sprites are bigger
+                targetSize = this.playerId === 2 ? 85 : 75;
+            } else if (!this.onGround) {
+                // Green snake (P1) jumping sprite is bigger
+                targetSize = this.playerId === 1 ? 65 : 55;
             } else {
-                targetSize = 55; // Default idle/jumping size
+                targetSize = 55; // Default idle size
             }
 
             // Scale sprite to fit target size while preserving aspect ratio
@@ -848,7 +876,7 @@ class Frog extends Entity {
         let minDist = Infinity;
 
         for (const player of game.players) {
-            if (player.health <= 0) continue;
+            if (player.health <= 0 || player.dead) continue;
             const dx = player.x - this.x;
             const dy = player.y - this.y;
             const dist = Math.sqrt(dx * dx + dy * dy);
@@ -1072,6 +1100,65 @@ function createDeathEffect(x, y) {
     }
 }
 
+function createPlayerDeathEffect(x, y) {
+    // Create larger, more dramatic particle explosion for player death
+    for (let i = 0; i < 30; i++) {
+        const angle = Math.random() * Math.PI * 2;
+        const speed = Math.random() * 8 + 3;
+        game.particles.push(new Particle(
+            x, y,
+            Math.cos(angle) * speed,
+            Math.sin(angle) * speed,
+            i % 2 === 0 ? '#FF6B6B' : '#FFD700',
+            60
+        ));
+    }
+}
+
+// Mobile detection
+function detectMobile() {
+    const isTouchDevice = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+    const isSmallScreen = window.innerWidth < 768;
+    game.isMobile = isTouchDevice && isSmallScreen;
+
+    // Update control visibility classes on body
+    if (game.isMobile) {
+        document.body.classList.add('is-mobile');
+    } else {
+        document.body.classList.remove('is-mobile');
+    }
+}
+
+function updateMobileControlsVisibility() {
+    if (!game.isMobile) {
+        return; // Desktop always shows both controls
+    }
+
+    // Hide P2 controls on mobile
+    const joystick2 = document.getElementById('joystick2');
+    const actions2 = document.getElementById('actions2');
+
+    if (joystick2) {
+        joystick2.style.display = 'none';
+    }
+    if (actions2) {
+        actions2.style.display = 'none';
+    }
+}
+
+function updateDesktopControlsVisibility() {
+    const p2Controls = document.getElementById('p2Controls');
+
+    if (!p2Controls) return;
+
+    // Hide P2 controls in single player mode
+    if (game.singlePlayer) {
+        p2Controls.style.display = 'none';
+    } else {
+        p2Controls.style.display = 'block';
+    }
+}
+
 // Game functions
 function initGame() {
     game.canvas = document.getElementById('gameCanvas');
@@ -1115,23 +1202,106 @@ function initGame() {
         // Setup controls
         setupControls();
 
+        // Detect mobile device
+        detectMobile();
+
         // UI event listeners
-        startBtn.addEventListener('click', startGame);
+        startBtn.addEventListener('click', () => startGame(false, null)); // Two-player co-op
         document.getElementById('restartBtn').addEventListener('click', restartGame);
 
-        // Add title screen click handler for snake jump animation
+        // Add title screen click handler for snake jump animation and snake selection
         const titleScreen = document.getElementById('titleScreen');
         const handleTitleClick = (e) => {
             // Don't trigger if clicking the start button, instructions, or title overlay
-            if (e.target.id === 'startBtn' || 
-                e.target.closest('#instructions') || 
+            if (e.target.id === 'startBtn' ||
+                e.target.closest('#instructions') ||
                 e.target.closest('.title-overlay')) {
                 return;
             }
+
+            // Get click/touch position relative to canvas
+            const rect = game.titleCanvas.getBoundingClientRect();
+            const scaleX = CONFIG.CANVAS_WIDTH / rect.width;
+            const scaleY = CONFIG.CANVAS_HEIGHT / rect.height;
+            const clientX = e.clientX || (e.touches && e.touches[0].clientX);
+            const clientY = e.clientY || (e.touches && e.touches[0].clientY);
+            const canvasX = (clientX - rect.left) * scaleX;
+            const canvasY = (clientY - rect.top) * scaleY;
+
+            // Check if clicked on left snake (P1)
+            const leftSnakeX = 270;
+            const leftSnakeY = 200;
+            const snakeSize = 85;
+            const leftHitbox = {
+                x: leftSnakeX - snakeSize / 2,
+                y: leftSnakeY - snakeSize / 2,
+                width: snakeSize,
+                height: snakeSize
+            };
+
+            // Check if clicked on right snake (P2)
+            const rightSnakeX = CONFIG.CANVAS_WIDTH - 270;
+            const rightSnakeY = 200;
+            const rightHitbox = {
+                x: rightSnakeX - snakeSize / 2,
+                y: rightSnakeY - snakeSize / 2,
+                width: snakeSize,
+                height: snakeSize
+            };
+
+            // Check if clicked on left snake
+            if (canvasX >= leftHitbox.x && canvasX <= leftHitbox.x + leftHitbox.width &&
+                canvasY >= leftHitbox.y && canvasY <= leftHitbox.y + leftHitbox.height) {
+                // Start single player as P1
+                startGame(true, 0);
+                return;
+            }
+
+            // Check if clicked on right snake
+            if (canvasX >= rightHitbox.x && canvasX <= rightHitbox.x + rightHitbox.width &&
+                canvasY >= rightHitbox.y && canvasY <= rightHitbox.y + rightHitbox.height) {
+                // Start single player as P2
+                startGame(true, 1);
+                return;
+            }
+
+            // Click anywhere else on canvas makes snakes jump
             makeTitleSnakesJump();
         };
         titleScreen.addEventListener('click', handleTitleClick);
         titleScreen.addEventListener('touchstart', handleTitleClick);
+
+        // Add hover cursor for snakes
+        const handleTitleHover = (e) => {
+            const rect = game.titleCanvas.getBoundingClientRect();
+            const scaleX = CONFIG.CANVAS_WIDTH / rect.width;
+            const scaleY = CONFIG.CANVAS_HEIGHT / rect.height;
+            const mouseX = (e.clientX - rect.left) * scaleX;
+            const mouseY = (e.clientY - rect.top) * scaleY;
+
+            const snakeSize = 85;
+            const leftSnakeHitbox = {
+                x: 270 - snakeSize / 2,
+                y: 200 - snakeSize / 2,
+                width: snakeSize,
+                height: snakeSize
+            };
+            const rightSnakeHitbox = {
+                x: (CONFIG.CANVAS_WIDTH - 270) - snakeSize / 2,
+                y: 200 - snakeSize / 2,
+                width: snakeSize,
+                height: snakeSize
+            };
+
+            // Check if hovering over either snake
+            const overLeftSnake = mouseX >= leftSnakeHitbox.x && mouseX <= leftSnakeHitbox.x + leftSnakeHitbox.width &&
+                                  mouseY >= leftSnakeHitbox.y && mouseY <= leftSnakeHitbox.y + leftSnakeHitbox.height;
+            const overRightSnake = mouseX >= rightSnakeHitbox.x && mouseX <= rightSnakeHitbox.x + rightSnakeHitbox.width &&
+                                   mouseY >= rightSnakeHitbox.y && mouseY <= rightSnakeHitbox.y + rightSnakeHitbox.height;
+
+            game.titleCanvas.style.cursor = (overLeftSnake || overRightSnake) ? 'pointer' : 'default';
+        };
+        titleScreen.addEventListener('mousemove', handleTitleHover);
 
         // Draw title screen with graphics
         drawTitleScreen();
@@ -1285,22 +1455,43 @@ function setupControls() {
             }
         }
 
-        // Player 1 controls (WASD + F/G)
-        if (e.key.toLowerCase() === 'f') input.player1.roll = true;
-        if (e.key.toLowerCase() === 'g') input.player1.grab = true;
+        // Single player controls (Arrow keys + 0/RCtrl)
+        if (game.singlePlayer) {
+            const activeInput = game.activePlayer === 0 ? input.player1 : input.player2;
+            if (e.key === '0' || e.code === 'Digit0' || e.code === 'Numpad0') activeInput.roll = true;
+            if (e.code === 'ControlRight') activeInput.grab = true;
+        }
 
-        // Player 2 controls (Arrows + K/L)
-        if (e.key.toLowerCase() === 'k') input.player2.roll = true;
-        if (e.key.toLowerCase() === 'l') input.player2.grab = true;
+        // Player 1 controls (Arrows + 0/RCtrl) - two player mode
+        if (!game.singlePlayer) {
+            if (e.key === '0' || e.code === 'Digit0' || e.code === 'Numpad0') input.player1.roll = true;
+            if (e.code === 'ControlRight') input.player1.grab = true;
+        }
+
+        // Player 2 controls (WASD + F/G) - two player mode
+        if (!game.singlePlayer) {
+            if (e.key.toLowerCase() === 'f') input.player2.roll = true;
+            if (e.key.toLowerCase() === 'g') input.player2.grab = true;
+        }
     });
 
     window.addEventListener('keyup', (e) => {
         game.keys[e.key.toLowerCase()] = false;
 
-        if (e.key.toLowerCase() === 'f') input.player1.roll = false;
-        if (e.key.toLowerCase() === 'g') input.player1.grab = false;
-        if (e.key.toLowerCase() === 'k') input.player2.roll = false;
-        if (e.key.toLowerCase() === 'l') input.player2.grab = false;
+        // Single player controls
+        if (game.singlePlayer) {
+            const activeInput = game.activePlayer === 0 ? input.player1 : input.player2;
+            if (e.key === '0' || e.code === 'Digit0' || e.code === 'Numpad0') activeInput.roll = false;
+            if (e.code === 'ControlRight') activeInput.grab = false;
+        }
+
+        // Two player controls
+        if (!game.singlePlayer) {
+            if (e.key === '0' || e.code === 'Digit0' || e.code === 'Numpad0') input.player1.roll = false;
+            if (e.code === 'ControlRight') input.player1.grab = false;
+            if (e.key.toLowerCase() === 'f') input.player2.roll = false;
+            if (e.key.toLowerCase() === 'g') input.player2.grab = false;
+        }
     });
 
     // Mobile touch controls
@@ -1388,24 +1579,41 @@ function handleJoystickMove(touch, joystick, stick, playerId) {
 }
 
 function updateKeyboardInput() {
-    // Player 1 (WASD)
-    input.player1.x = 0;
-    input.player1.y = 0;
-    if (game.keys['a']) input.player1.x = -1;
-    if (game.keys['d']) input.player1.x = 1;
-    if (game.keys['w']) input.player1.y = -1;
-    if (game.keys['s']) input.player1.y = 1;
+    if (game.singlePlayer) {
+        // Single player mode - always use Arrow keys regardless of which snake
+        const activeInput = game.activePlayer === 0 ? input.player1 : input.player2;
+        activeInput.x = 0;
+        activeInput.y = 0;
+        if (game.keys['arrowleft']) activeInput.x = -1;
+        if (game.keys['arrowright']) activeInput.x = 1;
+        if (game.keys['arrowup']) activeInput.y = -1;
+        if (game.keys['arrowdown']) activeInput.y = 1;
 
-    // Player 2 (Arrows)
-    input.player2.x = 0;
-    input.player2.y = 0;
-    if (game.keys['arrowleft']) input.player2.x = -1;
-    if (game.keys['arrowright']) input.player2.x = 1;
-    if (game.keys['arrowup']) input.player2.y = -1;
-    if (game.keys['arrowdown']) input.player2.y = 1;
+        // Reset inactive player input
+        const inactiveInput = game.activePlayer === 0 ? input.player2 : input.player1;
+        inactiveInput.x = 0;
+        inactiveInput.y = 0;
+    } else {
+        // Two player mode - separate controls
+        // Player 1 (Arrows)
+        input.player1.x = 0;
+        input.player1.y = 0;
+        if (game.keys['arrowleft']) input.player1.x = -1;
+        if (game.keys['arrowright']) input.player1.x = 1;
+        if (game.keys['arrowup']) input.player1.y = -1;
+        if (game.keys['arrowdown']) input.player1.y = 1;
+
+        // Player 2 (WASD)
+        input.player2.x = 0;
+        input.player2.y = 0;
+        if (game.keys['a']) input.player2.x = -1;
+        if (game.keys['d']) input.player2.x = 1;
+        if (game.keys['w']) input.player2.y = -1;
+        if (game.keys['s']) input.player2.y = 1;
+    }
 }
 
-function startGame() {
+function startGame(singlePlayer = false, activePlayer = null) {
     setScreen('game');
     audioManager.hasInteracted = true;
     audioManager.playBackground();
@@ -1415,9 +1623,33 @@ function startGame() {
     game.enemies = [];
     game.particles = [];
 
+    // Set single player mode
+    if (game.isMobile) {
+        // Force single player on mobile
+        game.singlePlayer = true;
+        game.activePlayer = 0; // Always P1 on mobile
+    } else {
+        game.singlePlayer = singlePlayer;
+        game.activePlayer = activePlayer;
+    }
+
+    // Update mobile controls visibility
+    updateMobileControlsVisibility();
+
+    // Update desktop controls visibility
+    updateDesktopControlsVisibility();
+
     // Reset players
     game.players.forEach((player, i) => {
+        // In single player mode, only initialize the active player
+        if (game.singlePlayer && i !== game.activePlayer) {
+            player.health = 0;
+            player.dead = true;
+            return;
+        }
+
         player.health = 100;
+        player.dead = false;
         player.x = 100 + i * 100;
         player.y = 300;
         player.vx = 0;
@@ -1582,6 +1814,28 @@ function updateHUD() {
     // Wave info
     document.getElementById('waveNumber').textContent = `Wave ${game.wave}`;
     document.getElementById('enemyCount').textContent = `Frogs: ${game.enemies.length}`;
+
+    // Hide HUD for inactive players in single player mode
+    if (game.singlePlayer) {
+        const p1Hud = document.querySelector('.player-hud.p1');
+        const p2Hud = document.querySelector('.player-hud.p2');
+
+        if (game.activePlayer === 0) {
+            // P1 active, hide P2 HUD
+            if (p1Hud) p1Hud.style.display = '';
+            if (p2Hud) p2Hud.style.display = 'none';
+        } else if (game.activePlayer === 1) {
+            // P2 active, hide P1 HUD
+            if (p1Hud) p1Hud.style.display = 'none';
+            if (p2Hud) p2Hud.style.display = '';
+        }
+    } else {
+        // Show both HUDs in 2-player mode
+        const p1Hud = document.querySelector('.player-hud.p1');
+        const p2Hud = document.querySelector('.player-hud.p2');
+        if (p1Hud) p1Hud.style.display = '';
+        if (p2Hud) p2Hud.style.display = '';
+    }
 }
 
 function gameOver() {
