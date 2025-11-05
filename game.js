@@ -1253,13 +1253,42 @@ function initGame() {
         startBtn.addEventListener('click', () => startGame(false, null)); // Two-player co-op
         document.getElementById('restartBtn').addEventListener('click', restartGame);
 
+        // How to Play toggle functionality
+        const closeInstructionsBtn = document.getElementById('closeInstructions');
+        const instructions = document.getElementById('instructions');
+        const instructionsHeader = document.querySelector('.instructions-header');
+
+        // Click on instructions panel to toggle expand/collapse
+        if (instructions) {
+            instructions.addEventListener('click', (e) => {
+                // If clicking the header or panel when collapsed, expand
+                if (!instructions.classList.contains('expanded')) {
+                    instructions.classList.add('expanded');
+                    e.stopPropagation();
+                } else {
+                    // If expanded, clicking anywhere (including close button) collapses
+                    instructions.classList.remove('expanded');
+                    e.stopPropagation();
+                }
+            });
+        }
+
+        // Close button explicitly removes expanded class
+        if (closeInstructionsBtn) {
+            closeInstructionsBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                instructions.classList.remove('expanded');
+            });
+        }
+
         // Add title screen click handler for snake jump animation and snake selection
         const titleScreen = document.getElementById('titleScreen');
         const handleTitleClick = (e) => {
-            // Don't trigger if clicking the start button, instructions, or title overlay
+            // Don't trigger if clicking the start button, instructions, or title overlay buttons
             if (e.target.id === 'startBtn' ||
+                e.target.id === 'closeInstructions' ||
                 e.target.closest('#instructions') ||
-                e.target.closest('.title-overlay')) {
+                e.target.closest('.title-overlay button')) {
                 return;
             }
 

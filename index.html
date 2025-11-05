@@ -71,7 +71,11 @@
                 <button id="startBtn" class="game-btn">Start</button>
             </div>
             <div id="instructions">
-                <h2>How to Play</h2>
+                <div class="instructions-header">
+                    <h2>How to Play</h2>
+                    <button id="closeInstructions" class="close-instructions-btn" aria-label="Close instructions">✕</button>
+                </div>
+                <div class="instructions-content">
                 <div class="controls-section desktop-only">
                     <p>Click Start for 2-player co-op, or click a snake for solo play</p>
                     <h3>Desktop Controls</h3>
@@ -87,6 +91,7 @@
                     <h3>Tips</h3>
                     <p>💫 Roll into frogs or whip them!</p>
                     <p>⚡ Chain attacks for combo bonuses!</p>
+                </div>
                 </div>
             </div>
         </div>
@@ -164,7 +169,7 @@
         </div>
     </div>
 
-    <div id="version">v0.4.3</div>
+    <div id="version">v0.4.4</div>
 
     <!-- Audio Toggle Button -->
     <button id="audioToggle" class="audio-toggle" aria-label="Toggle audio">

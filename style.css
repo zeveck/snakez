@@ -99,8 +99,45 @@ body {
     background: rgba(0,0,0,0.3);
     padding: 20px;
     border-radius: 10px;
-    max-height: 60vh;
-    overflow-y: auto;
+    position: relative;
+}
+
+.instructions-header {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-bottom: 0;
+}
+
+.instructions-content {
+    display: block;
+}
+
+/* Close instructions button - hidden by default */
+.close-instructions-btn {
+    display: none;
+    background: rgba(255, 255, 255, 0.2);
+    color: white;
+    border: 2px solid rgba(255, 255, 255, 0.4);
+    width: 35px;
+    height: 35px;
+    border-radius: 50%;
+    font-size: 1.3rem;
+    cursor: pointer;
+    transition: all 0.3s;
+    font-family: 'Courier New', monospace;
+    line-height: 1;
+    flex-shrink: 0;
+    margin-left: 15px;
+}
+
+.close-instructions-btn:hover {
+    background: rgba(255, 255, 255, 0.3);
+    transform: scale(1.1);
+}
+
+.close-instructions-btn:active {
+    transform: scale(0.95);
 }
 
 #instructions h2 {
@@ -426,9 +463,171 @@ body {
     }
 }
 
+@media (max-height: 700px) {
+    #instructions {
+        padding: 15px;
+        margin-top: 20px;
+    }
+
+    #instructions h2 {
+        margin-bottom: 12px;
+    }
+
+    #instructions h3 {
+        margin-top: 10px;
+        margin-bottom: 6px;
+    }
+
+    #instructions p {
+        margin: 5px 0;
+    }
+
+    .controls-section, .tips {
+        margin: 12px 0;
+    }
+}
+
+@media (max-height: 600px) {
+    /* Position instructions at bottom, collapsed by default */
+    #instructions {
+        position: fixed;
+        bottom: 25px;
+        left: 50%;
+        transform: translateX(-50%);
+        margin: 0;
+        width: fit-content;
+        max-width: min(250px, 90%);
+        padding: 10px 16px;
+        cursor: pointer;
+        transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        z-index: 999;
+        background: rgba(0, 0, 0, 0.5);
+    }
+
+    .instructions-header {
+        margin-bottom: 0;
+        width: auto;
+    }
+
+    #instructions .instructions-header h2 {
+        font-size: clamp(1.2rem, 3vw, 1.5rem);
+        margin: 0;
+        white-space: nowrap;
+    }
+
+    #instructions:not(.expanded) .instructions-header h2 {
+        margin-bottom: 0;
+    }
+
+    .instructions-content {
+        max-height: 0;
+        overflow: hidden;
+        transition: max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .close-instructions-btn {
+        display: none;
+    }
+
+    /* When instructions are expanded - higher specificity to override #titleScreen #instructions */
+    #titleScreen #instructions.expanded {
+        position: fixed !important;
+        top: 10px;
+        bottom: 10px;
+        left: 10px;
+        right: 10px;
+        max-width: none;
+        width: auto;
+        transform: none;
+        padding: 20px;
+        cursor: default;
+        overflow-y: auto;
+        z-index: 1000;
+        background: rgba(0, 0, 0, 0.7);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+    }
+
+    #instructions.expanded .instructions-header {
+        width: 100%;
+        max-width: 800px;
+        text-align: center;
+    }
+
+    #instructions.expanded .instructions-header h2 {
+        font-size: clamp(1.5rem, 4vw, 2rem);
+        margin-bottom: 15px;
+    }
+
+    #instructions.expanded .instructions-content {
+        max-height: none;
+        overflow: visible;
+        max-width: 800px;
+        width: 100%;
+    }
+
+    #instructions.expanded .close-instructions-btn {
+        display: block;
+        position: absolute;
+        top: 20px;
+        right: 20px;
+        background: none;
+        border: none;
+        border-radius: 0;
+        width: auto;
+        height: auto;
+        font-size: 2rem;
+        padding: 8px;
+        margin: 0;
+        opacity: 0.8;
+    }
+
+    #instructions.expanded .close-instructions-btn:hover {
+        opacity: 1;
+        background: rgba(255, 255, 255, 0.1);
+        transform: scale(1.1);
+    }
+
+    #instructions.expanded .close-instructions-btn:active {
+        transform: scale(0.95);
+    }
+
+    #instructions h3 {
+        margin-top: 10px;
+        margin-bottom: 6px;
+    }
+
+    #instructions p {
+        margin: 5px 0;
+    }
+
+    .controls-section, .tips {
+        margin: 10px 0;
+    }
+}
+
 @media (orientation: landscape) and (max-height: 500px) {
     #instructions {
-        max-height: 50vh;
+        padding: 10px 16px;
+        margin-top: 10px;
+    }
+
+    #instructions h2 {
+        margin-bottom: 0;
+    }
+
+    #instructions h3 {
+        margin-top: 4px;
+        margin-bottom: 3px;
+    }
+
+    #instructions p {
+        margin: 2px 0;
+    }
+
+    .controls-section, .tips {
+        margin: 6px 0;
     }
 
     #mobileControls {
@@ -484,9 +683,6 @@ body {
     opacity: 1;
     transform: scale(1.05);
 }
-
-
-
 
 
 
@@ -689,18 +885,36 @@ body {
 #titleScreen .title-overlay {
     position: relative;
     z-index: 1;
-    padding-top: 400px;
+    padding-top: 0;
     pointer-events: none;
+}
+
+
+/* Position Start button with proper margin */
+#titleScreen #startBtn {
+    margin-top: 50px;
+}
+
+/* Increase margin on larger screens for better centering */
+@media (min-height: 700px) {
+    #titleScreen #startBtn {
+        margin-top: 360px;
+    }
 }
 
 #titleScreen .title-overlay * {
     pointer-events: auto;
 }
 
-#titleScreen #instructions {
-    position: relative;
-    z-index: 1;
+
+/* Only set position: relative when NOT expanded AND screen is large enough */
+@media (min-height: 600px) {
+    #titleScreen #instructions:not(.expanded) {
+        position: relative;
+        z-index: 1;
+    }
 }
+
 
 /* Hide text elements since we're drawing on canvas */
 #titleScreen .title-overlay h1,
