@@ -1742,17 +1742,17 @@ function setupControls() {
             });
         }
 
-        // Single player controls (Arrow keys + 0/RCtrl)
+        // Single player controls (Arrow keys + 0/1)
         if (game.singlePlayer) {
             const activeInput = game.activePlayer === 0 ? input.player1 : input.player2;
             if (e.key === '0' || e.code === 'Digit0' || e.code === 'Numpad0') activeInput.roll = true;
-            if (e.code === 'ControlRight') activeInput.grab = true;
+            if (e.key === '1' || e.code === 'Digit1') activeInput.grab = true;
         }
 
-        // Player 1 controls (Arrows + 0/RCtrl) - two player mode
+        // Player 1 controls (Arrows + 0/1) - two player mode
         if (!game.singlePlayer) {
             if (e.key === '0' || e.code === 'Digit0' || e.code === 'Numpad0') input.player1.roll = true;
-            if (e.code === 'ControlRight') input.player1.grab = true;
+            if (e.key === '1' || e.code === 'Digit1') input.player1.grab = true;
         }
 
         // Player 2 controls (WASD + F/G) - two player mode
@@ -1769,13 +1769,13 @@ function setupControls() {
         if (game.singlePlayer) {
             const activeInput = game.activePlayer === 0 ? input.player1 : input.player2;
             if (e.key === '0' || e.code === 'Digit0' || e.code === 'Numpad0') activeInput.roll = false;
-            if (e.code === 'ControlRight') activeInput.grab = false;
+            if (e.key === '1' || e.code === 'Digit1') activeInput.grab = false;
         }
 
         // Two player controls
         if (!game.singlePlayer) {
             if (e.key === '0' || e.code === 'Digit0' || e.code === 'Numpad0') input.player1.roll = false;
-            if (e.code === 'ControlRight') input.player1.grab = false;
+            if (e.key === '1' || e.code === 'Digit1') input.player1.grab = false;
             if (e.key.toLowerCase() === 'f') input.player2.roll = false;
             if (e.key.toLowerCase() === 'g') input.player2.grab = false;
         }

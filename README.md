@@ -1,6 +1,6 @@
 # Snake Style 🐍⚔️
 
-**Version 0.4.5** - A swamp-based 2-player cooperative beat 'em up arcade game
+**Version 0.4.6** - A swamp-based 2-player cooperative beat 'em up arcade game
 
 Fight alongside your friend as serpent warriors defending the swamp from endless waves of hostile frogs!
 
@@ -39,7 +39,7 @@ Each snake warrior has two powerful attacks:
 ### Player 1 (Green Snake)
 - **Movement**: Arrow Keys `↑` `←` `↓` `→`
 - **Roll Attack**: `0` (zero key)
-- **Whip Attack**: `Right Ctrl`
+- **Whip Attack**: `1` (one key)
 
 ### Player 2 (Orange Snake)
 - **Movement**: `W` `A` `S` `D`
@@ -137,7 +137,11 @@ All pixel art graphics are located in the `/graphics` folder:
 
 ## 📝 Version History
 
-### v0.4.5 (Current)
+### v0.4.6 (Current)
+- 🎮 Changed Player 1 whip attack control from Right Ctrl to 1 key for easier accessibility
+- 📝 Updated all control documentation across UI and docs
+
+### v0.4.5
 - 🐸 Added defeated frog parade on Game Over screen - watch all the frogs you defeated hop across!
 - 📊 Added frog type counter with sprite icons showing exactly how many of each frog type you defeated
 - ⚡ Enhanced parade with varied jump heights for visual variety
