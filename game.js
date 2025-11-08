@@ -396,7 +396,7 @@ const game = {
     touches: {},
     lastTime: 0,
     screen: 'title',
-    gameOverTimer: null,
+    defeatedFrogs: [], // Track all defeated frogs for game over parade
     titleSnakes: { left: { y: 0, vy: 0, jumping: false }, right: { y: 0, vy: 0, jumping: false } },
     singlePlayer: false,
     activePlayer: null, // 0 for P1, 1 for P2 in single player
@@ -944,6 +944,7 @@ class Frog extends Entity {
     die() {
         this.alive = false;
         game.score += this.type === 'small' ? 10 : this.type === 'medium' ? 25 : this.type === 'poison_dart' ? 35 : 50;
+        game.defeatedFrogs.push({ type: this.type }); // Track for game over parade
         createDeathEffect(this.x + this.width / 2, this.y + this.height / 2);
     }
 
@@ -1101,6 +1102,208 @@ class Particle {
     }
 }
 
+// Parade Frog - simplified frog for Game Over parade
+class ParadeFrog {
+    constructor(type, canvasHeight) {
+        this.type = type;
+        // Size based on type
+        const sizes = { small: 30, medium: 40, poison_dart: 25, large: 60 };
+        this.width = sizes[type] || 30;
+        this.height = sizes[type] || 30;
+
+        // Start off-screen left
+        this.x = -this.width - 20;
+        // Ground level is near bottom with some randomization
+        this.groundY = canvasHeight - this.height - 10 - Math.random() * 20;
+        this.y = this.groundY;
+
+        // Movement
+        this.vx = 2 + Math.random() * 2; // Horizontal speed
+        this.vy = 0;
+        this.gravity = 0.5;
+        // Jump variation: some frogs jump much higher for variety
+        const jumpVariation = Math.random();
+        if (jumpVariation < 0.2) {
+            // 20% chance for super high jumps
+            this.jumpPower = -14 - Math.random() * 6; // -14 to -20
+        } else if (jumpVariation < 0.5) {
+            // 30% chance for high jumps
+            this.jumpPower = -10 - Math.random() * 4; // -10 to -14
+        } else {
+            // 50% chance for normal jumps
+            this.jumpPower = -7 - Math.random() * 3; // -7 to -10
+        }
+
+        // Animation
+        this.groundedFrames = 0;
+        this.facing = 1; // Always face right for parade
+
+        // Random hue for poison dart frogs
+        this.hue = type === 'poison_dart' ? Math.random() * 360 : 0;
+    }
+
+    update() {
+        // Move horizontally
+        this.x += this.vx;
+
+        // Simple jump physics
+        this.vy += this.gravity;
+        this.y += this.vy;
+
+        // Ground collision
+        if (this.y >= this.groundY) {
+            this.y = this.groundY;
+            this.vy = 0;
+            this.groundedFrames++;
+
+            // Jump periodically
+            if (this.groundedFrames > 20 && Math.random() < 0.1) {
+                this.vy = this.jumpPower;
+                this.groundedFrames = 0;
+            }
+        } else {
+            this.groundedFrames = 0;
+        }
+    }
+
+    draw(ctx) {
+        // Determine sprite (idle when grounded for 3+ frames, jumping otherwise)
+        const isIdle = this.groundedFrames >= 3;
+        const spriteSuffix = this.type === 'large' ? 'boss' : this.type;
+        const spriteState = isIdle ? 'idle' : 'jumping';
+        const spriteName = `frog_${spriteSuffix}_${spriteState}`;
+        const sprite = assets.get(spriteName);
+
+        if (sprite && sprite.complete) {
+            const spriteAspect = sprite.width / sprite.height;
+            let spriteWidth = this.width;
+            let spriteHeight = spriteWidth / spriteAspect;
+
+            // Boost size for small jumping frogs
+            if (this.type === 'small' && !isIdle) {
+                spriteWidth *= 1.5;
+                spriteHeight *= 1.5;
+            }
+
+            const drawX = this.x + this.width / 2 - spriteWidth / 2;
+            const drawY = this.y + this.height / 2 - spriteHeight / 2;
+
+            ctx.save();
+
+            // Apply hue rotation for poison dart frogs
+            if (this.type === 'poison_dart') {
+                ctx.filter = `hue-rotate(${this.hue}deg)`;
+            }
+
+            // No flipping needed - always face right
+            ctx.drawImage(sprite, drawX, drawY, spriteWidth, spriteHeight);
+            ctx.restore();
+        }
+    }
+
+    isOffScreen(canvasWidth) {
+        return this.x > canvasWidth + 20;
+    }
+}
+
+// Frog Parade System for Game Over screen
+class FrogParade {
+    constructor() {
+        this.canvas = null;
+        this.ctx = null;
+        this.frogs = [];
+        this.frogQueue = [];
+        this.spawnTimer = 0;
+        this.spawnInterval = 0;
+        this.running = false;
+        this.animationId = null;
+    }
+
+    start(defeatedFrogs) {
+        // Get canvas and setup
+        this.canvas = document.getElementById('paradeCanvas');
+        if (!this.canvas) return;
+
+        // Set canvas size
+        this.canvas.width = window.innerWidth;
+        this.canvas.height = 400;
+        this.ctx = this.canvas.getContext('2d');
+
+        // Copy defeated frogs to queue (shuffle for variety)
+        this.frogQueue = [...defeatedFrogs].sort(() => Math.random() - 0.5);
+        this.frogs = [];
+        this.spawnTimer = 0;
+        this.spawnInterval = this.calculateSpawnInterval();
+        this.running = true;
+
+        // Start animation loop
+        this.animate();
+    }
+
+    calculateSpawnInterval() {
+        // More concurrent frogs - spawn 2-3x as many at once without performance issues
+        const baseInterval = 6; // frames (~10 frogs/second at 60 FPS)
+        const count = this.frogQueue.length;
+        if (count > 100) return 3;   // Very dense - ~20 frogs/second
+        if (count > 50) return 4;    // Dense - 15 frogs/second
+        if (count > 20) return 5;    // Moderate density - 12 frogs/second
+        return baseInterval;
+    }
+
+    animate() {
+        if (!this.running) return;
+
+        this.update();
+        this.render();
+
+        this.animationId = requestAnimationFrame(() => this.animate());
+    }
+
+    update() {
+        // Spawn new frogs from queue
+        this.spawnTimer++;
+        if (this.spawnTimer >= this.spawnInterval && this.frogQueue.length > 0) {
+            const frogData = this.frogQueue.shift();
+            this.frogs.push(new ParadeFrog(frogData.type, this.canvas.height));
+            this.spawnTimer = 0;
+            // Add some randomness to spawn timing
+            this.spawnInterval = this.calculateSpawnInterval() + Math.floor(Math.random() * 10);
+        }
+
+        // Update all frogs
+        this.frogs.forEach(frog => frog.update());
+
+        // Remove frogs that are off screen
+        this.frogs = this.frogs.filter(frog => !frog.isOffScreen(this.canvas.width));
+    }
+
+    render() {
+        if (!this.ctx) return;
+
+        // Clear canvas with transparency
+        this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+
+        // Draw all frogs
+        this.frogs.forEach(frog => frog.draw(this.ctx));
+    }
+
+    stop() {
+        this.running = false;
+        if (this.animationId) {
+            cancelAnimationFrame(this.animationId);
+            this.animationId = null;
+        }
+        this.frogs = [];
+        this.frogQueue = [];
+        if (this.ctx) {
+            this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+        }
+    }
+}
+
+// Global parade instance
+let frogParade = null;
+
 // Particle effects
 function createSplash(x, y) {
     for (let i = 0; i < 8; i++) {
@@ -1252,6 +1455,7 @@ function initGame() {
         // UI event listeners
         startBtn.addEventListener('click', () => startGame(false, null)); // Two-player co-op
         document.getElementById('restartBtn').addEventListener('click', restartGame);
+        document.getElementById('titleBtn').addEventListener('click', returnToTitle);
 
         // How to Play toggle functionality
         const closeInstructionsBtn = document.getElementById('closeInstructions');
@@ -1528,6 +1732,16 @@ function setupControls() {
             }
         }
 
+        // Playtesting shortcut: Delete key to instantly die
+        if (e.key === 'Delete' && game.running) {
+            game.players.forEach(player => {
+                if (!player.dead) {
+                    player.health = 0;
+                    player.die();
+                }
+            });
+        }
+
         // Single player controls (Arrow keys + 0/RCtrl)
         if (game.singlePlayer) {
             const activeInput = game.activePlayer === 0 ? input.player1 : input.player2;
@@ -1694,6 +1908,7 @@ function startGame(singlePlayer = false, activePlayer = null) {
     game.score = 0;
     game.enemies = [];
     game.particles = [];
+    game.defeatedFrogs = []; // Reset defeated frogs tracking
 
     // Set single player mode
     if (game.isMobile) {
@@ -1744,19 +1959,17 @@ function startGame(singlePlayer = false, activePlayer = null) {
 }
 
 function restartGame() {
-    // Clear game over timer if active
-    if (game.gameOverTimer) {
-        clearTimeout(game.gameOverTimer);
-        game.gameOverTimer = null;
+    // Stop frog parade
+    if (frogParade) {
+        frogParade.stop();
     }
     startGame();
 }
 
 function returnToTitle() {
-    // Clear game over timer
-    if (game.gameOverTimer) {
-        clearTimeout(game.gameOverTimer);
-        game.gameOverTimer = null;
+    // Stop frog parade
+    if (frogParade) {
+        frogParade.stop();
     }
     setScreen('title');
     audioManager.playTitle();
@@ -1916,13 +2129,33 @@ function gameOver() {
     audioManager.stopAll();
     document.getElementById('finalScore').textContent = `Score: ${game.score}`;
     document.getElementById('finalWave').textContent = `Waves Completed: ${game.wave - 1}`;
+
+    // Calculate frog counts by type
+    const frogCounts = {
+        small: 0,
+        medium: 0,
+        poison_dart: 0,
+        large: 0
+    };
+
+    game.defeatedFrogs.forEach(frog => {
+        if (frogCounts.hasOwnProperty(frog.type)) {
+            frogCounts[frog.type]++;
+        }
+    });
+
+    // Update frog count displays
+    document.getElementById('smallFrogCount').textContent = frogCounts.small;
+    document.getElementById('mediumFrogCount').textContent = frogCounts.medium;
+    document.getElementById('poisonFrogCount').textContent = frogCounts.poison_dart;
+    document.getElementById('bossFrogCount').textContent = frogCounts.large;
+
     setTimeout(() => {
         setScreen('gameover');
-        // Start timer to return to title screen after 10 seconds
-        if (game.gameOverTimer) clearTimeout(game.gameOverTimer);
-        game.gameOverTimer = setTimeout(() => {
-            returnToTitle();
-        }, 10000);
+
+        // Start the frog parade
+        if (!frogParade) frogParade = new FrogParade();
+        frogParade.start(game.defeatedFrogs);
     }, 1000);
 }
 

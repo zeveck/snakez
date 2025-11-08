@@ -162,14 +162,41 @@
         </div>
 
         <div id="gameOverScreen" class="screen">
-            <h1>Game Over!</h1>
-            <p id="finalScore">Score: 0</p>
-            <p id="finalWave">Waves Completed: 0</p>
-            <button id="restartBtn" class="game-btn">Play Again</button>
+            <div class="game-over-content">
+                <h1>Game Over</h1>
+                <p id="finalScore">Score: 0</p>
+                <p id="finalWave">Waves Completed: 0</p>
+                <div id="frogCounts" class="frog-counts">
+                    <h3>Frogs Defeated</h3>
+                    <div class="frog-count-grid">
+                        <div class="frog-count-item">
+                            <img src="graphics/frog_small_idle.png" alt="Small Frog" class="frog-icon">
+                            <span id="smallFrogCount">0</span>
+                        </div>
+                        <div class="frog-count-item">
+                            <img src="graphics/frog_medium_idle.png" alt="Medium Frog" class="frog-icon">
+                            <span id="mediumFrogCount">0</span>
+                        </div>
+                        <div class="frog-count-item">
+                            <img src="graphics/frog_poison_dart_idle.png" alt="Poison Dart Frog" class="frog-icon">
+                            <span id="poisonFrogCount">0</span>
+                        </div>
+                        <div class="frog-count-item">
+                            <img src="graphics/frog_large_boss_idle.png" alt="Boss Frog" class="frog-icon">
+                            <span id="bossFrogCount">0</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="game-over-buttons">
+                    <button id="restartBtn" class="game-btn">Play Again</button>
+                    <button id="titleBtn" class="game-btn secondary-btn">Return to Title</button>
+                </div>
+            </div>
+            <canvas id="paradeCanvas"></canvas>
         </div>
     </div>
 
-    <div id="version">v0.4.4</div>
+    <div id="version">v0.4.5</div>
 
     <!-- Audio Toggle Button -->
     <button id="audioToggle" class="audio-toggle" aria-label="Toggle audio">

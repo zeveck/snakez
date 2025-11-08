@@ -1,6 +1,6 @@
 # Snake Style 🐍⚔️
 
-**Version 0.4.4** - A swamp-based 2-player cooperative beat 'em up arcade game
+**Version 0.4.5** - A swamp-based 2-player cooperative beat 'em up arcade game
 
 Fight alongside your friend as serpent warriors defending the swamp from endless waves of hostile frogs!
 
@@ -137,7 +137,16 @@ All pixel art graphics are located in the `/graphics` folder:
 
 ## 📝 Version History
 
-### v0.4.4 (Current)
+### v0.4.5 (Current)
+- 🐸 Added defeated frog parade on Game Over screen - watch all the frogs you defeated hop across!
+- 📊 Added frog type counter with sprite icons showing exactly how many of each frog type you defeated
+- ⚡ Enhanced parade with varied jump heights for visual variety
+- 🎮 Added Delete key shortcut for instant death (playtesting)
+- 🔘 Added "Return to Title" button on Game Over screen
+- 🚫 Removed automatic return to title after 10 seconds
+- ✨ Removed exclamation mark from "Game Over!" title
+
+### v0.4.4
 - 📱 Added collapsible "How to Play" panel for small screens
 - 🎨 Improved Start button positioning with proper spacing from title
 - ♿ Better responsive layout for various screen sizes
