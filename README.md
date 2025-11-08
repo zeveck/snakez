@@ -1,6 +1,6 @@
 # Snake Style 🐍⚔️
 
-**Version 0.4.6** - A swamp-based 2-player cooperative beat 'em up arcade game
+**Version 0.4.7** - A swamp-based 2-player cooperative beat 'em up arcade game
 
 Fight alongside your friend as serpent warriors defending the swamp from endless waves of hostile frogs!
 
@@ -137,7 +137,16 @@ All pixel art graphics are located in the `/graphics` folder:
 
 ## 📝 Version History
 
-### v0.4.6 (Current)
+### v0.4.7 (Current)
+- 🌊 Enhanced Game Over parade with dramatic wave system
+- 🎭 Added 3-phase parade: wave surge (80% of frogs), transition, and steady flow
+- 📏 Wave intensity scales with defeated frogs (100-999, 1000-9999, 10000+)
+- 🖼️ Full-screen parade canvas for maximum visual impact
+- 🚫 Ceiling collision prevents frogs from clipping off-screen
+- ⚡ Doubled steady phase pace for faster completion
+- 🎯 Wave frogs spawn off-screen (-300 to -500px) for surge effect
+
+### v0.4.6
 - 🎮 Changed Player 1 whip attack control from Right Ctrl to 1 key for easier accessibility
 - 📝 Updated all control documentation across UI and docs
 

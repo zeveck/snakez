@@ -1104,15 +1104,22 @@ class Particle {
 
 // Parade Frog - simplified frog for Game Over parade
 class ParadeFrog {
-    constructor(type, canvasHeight) {
+    constructor(type, canvasHeight, jumpMode = 'steady') {
         this.type = type;
         // Size based on type
         const sizes = { small: 30, medium: 40, poison_dart: 25, large: 60 };
         this.width = sizes[type] || 30;
         this.height = sizes[type] || 30;
 
-        // Start off-screen left
-        this.x = -this.width - 20;
+        // Start off-screen left - further back during wave phase for surge effect
+        if (jumpMode === 'wave') {
+            // Wave phase: spawn in a cluster far off-screen for dramatic wave entrance
+            this.x = -300 - Math.random() * 200; // -300 to -500
+        } else {
+            // Normal: just off-screen
+            this.x = -this.width - 20;
+        }
+
         // Ground level is near bottom with some randomization
         this.groundY = canvasHeight - this.height - 10 - Math.random() * 20;
         this.y = this.groundY;
@@ -1121,17 +1128,27 @@ class ParadeFrog {
         this.vx = 2 + Math.random() * 2; // Horizontal speed
         this.vy = 0;
         this.gravity = 0.5;
-        // Jump variation: some frogs jump much higher for variety
-        const jumpVariation = Math.random();
-        if (jumpVariation < 0.2) {
-            // 20% chance for super high jumps
-            this.jumpPower = -14 - Math.random() * 6; // -14 to -20
-        } else if (jumpVariation < 0.5) {
-            // 30% chance for high jumps
-            this.jumpPower = -10 - Math.random() * 4; // -10 to -14
+
+        // Jump power based on mode
+        if (jumpMode === 'wave') {
+            // Wave phase: super high jumps for dramatic effect
+            this.jumpPower = -16 - Math.random() * 8; // -16 to -24
+        } else if (jumpMode === 'transition') {
+            // Transition phase: high jumps but less extreme
+            this.jumpPower = -12 - Math.random() * 6; // -12 to -18
         } else {
-            // 50% chance for normal jumps
-            this.jumpPower = -7 - Math.random() * 3; // -7 to -10
+            // Steady phase: varied jumps for visual interest
+            const jumpVariation = Math.random();
+            if (jumpVariation < 0.2) {
+                // 20% chance for super high jumps
+                this.jumpPower = -14 - Math.random() * 6; // -14 to -20
+            } else if (jumpVariation < 0.5) {
+                // 30% chance for high jumps
+                this.jumpPower = -10 - Math.random() * 4; // -10 to -14
+            } else {
+                // 50% chance for normal jumps
+                this.jumpPower = -7 - Math.random() * 3; // -7 to -10
+            }
         }
 
         // Animation
@@ -1149,6 +1166,12 @@ class ParadeFrog {
         // Simple jump physics
         this.vy += this.gravity;
         this.y += this.vy;
+
+        // Prevent clipping at top of screen
+        if (this.y < 0) {
+            this.y = 0;
+            this.vy = 0; // Stop upward movement if hitting ceiling
+        }
 
         // Ground collision
         if (this.y >= this.groundY) {
@@ -1217,6 +1240,15 @@ class FrogParade {
         this.spawnInterval = 0;
         this.running = false;
         this.animationId = null;
+
+        // Wave system for dramatic opening
+        this.phase = 'steady'; // 'wave', 'transition', 'steady'
+        this.phaseTimer = 0;
+        this.waveDuration = 0;
+        this.transitionDuration = 0;
+        this.waveSpawnRate = 0;
+        this.steadyReserve = 0; // Minimum frogs reserved for steady phase
+        this.maxFrogsOnScreen = 5000; // Performance cap
     }
 
     start(defeatedFrogs) {
@@ -1224,9 +1256,9 @@ class FrogParade {
         this.canvas = document.getElementById('paradeCanvas');
         if (!this.canvas) return;
 
-        // Set canvas size
+        // Set canvas size - full window height for parade
         this.canvas.width = window.innerWidth;
-        this.canvas.height = 400;
+        this.canvas.height = window.innerHeight;
         this.ctx = this.canvas.getContext('2d');
 
         // Copy defeated frogs to queue (shuffle for variety)
@@ -1235,6 +1267,48 @@ class FrogParade {
         this.spawnTimer = 0;
         this.spawnInterval = this.calculateSpawnInterval();
         this.running = true;
+
+        // Configure wave parameters based on total defeated
+        const totalDefeated = defeatedFrogs.length;
+
+        if (totalDefeated >= 10000) {
+            // 10,000+ frogs: ABSOLUTE MAYHEM
+            this.phase = 'wave';
+            this.transitionDuration = 180; // 3 seconds
+            this.waveSpawnRate = 10; // 10 frogs per frame
+            // Cap wave at 75% to guarantee 5% for steady phase
+            const waveCapacity = Math.floor(totalDefeated * 0.75);
+            this.waveDuration = Math.ceil(waveCapacity / this.waveSpawnRate);
+            // Reserve 5% minimum for steady phase
+            this.steadyReserve = Math.ceil(totalDefeated * 0.05);
+        } else if (totalDefeated >= 1000) {
+            // 1,000-9,999 frogs: Very intense wave
+            this.phase = 'wave';
+            this.transitionDuration = 120; // 2 seconds
+            this.waveSpawnRate = 7;
+            // Cap wave at 75% to guarantee 5% for steady phase
+            const waveCapacity = Math.floor(totalDefeated * 0.75);
+            this.waveDuration = Math.ceil(waveCapacity / this.waveSpawnRate);
+            this.steadyReserve = Math.ceil(totalDefeated * 0.05);
+        } else if (totalDefeated >= 100) {
+            // 100-999 frogs: Initial dramatic wave
+            this.phase = 'wave';
+            this.transitionDuration = 90; // 1.5 seconds
+            this.waveSpawnRate = 5;
+            // Cap wave at 75% to guarantee 5% for steady phase
+            const waveCapacity = Math.floor(totalDefeated * 0.75);
+            this.waveDuration = Math.ceil(waveCapacity / this.waveSpawnRate);
+            this.steadyReserve = Math.ceil(totalDefeated * 0.05);
+        } else {
+            // Less than 100 frogs: skip wave phase, normal parade
+            this.phase = 'steady';
+            this.waveDuration = 0;
+            this.transitionDuration = 0;
+            this.waveSpawnRate = 0;
+            this.steadyReserve = 0;
+        }
+
+        this.phaseTimer = 0;
 
         // Start animation loop
         this.animate();
@@ -1260,21 +1334,74 @@ class FrogParade {
     }
 
     update() {
-        // Spawn new frogs from queue
-        this.spawnTimer++;
-        if (this.spawnTimer >= this.spawnInterval && this.frogQueue.length > 0) {
-            const frogData = this.frogQueue.shift();
-            this.frogs.push(new ParadeFrog(frogData.type, this.canvas.height));
-            this.spawnTimer = 0;
-            // Add some randomness to spawn timing
-            this.spawnInterval = this.calculateSpawnInterval() + Math.floor(Math.random() * 10);
+        // Update phase timer and check for phase transitions
+        this.phaseTimer++;
+
+        if (this.phase === 'wave' && this.phaseTimer >= this.waveDuration) {
+            this.phase = 'transition';
+            this.phaseTimer = 0;
+        } else if (this.phase === 'transition' && this.phaseTimer >= this.transitionDuration) {
+            this.phase = 'steady';
+            this.phaseTimer = 0;
         }
+
+        // Spawn frogs based on current phase
+        this.spawnFrogs();
 
         // Update all frogs
         this.frogs.forEach(frog => frog.update());
 
         // Remove frogs that are off screen
         this.frogs = this.frogs.filter(frog => !frog.isOffScreen(this.canvas.width));
+    }
+
+    spawnFrogs() {
+        let spawnCount = 0;
+
+        if (this.phase === 'wave') {
+            // WAVE PHASE: Spawn many frogs per frame for dramatic effect
+            if (this.frogs.length < this.maxFrogsOnScreen && this.frogQueue.length > 0) {
+                spawnCount = Math.min(
+                    this.waveSpawnRate,
+                    this.frogQueue.length,
+                    this.maxFrogsOnScreen - this.frogs.length
+                );
+            }
+        } else if (this.phase === 'transition') {
+            // TRANSITION PHASE: Gradually reduce spawn rate, but preserve reserve for steady
+            const progress = this.phaseTimer / this.transitionDuration;
+            // Start at waveSpawnRate, reduce to 1 by end of transition
+            const currentRate = Math.ceil(this.waveSpawnRate * (1 - progress * 0.9));
+
+            this.spawnTimer++;
+            if (this.spawnTimer >= 3) { // Spawn every 3 frames during transition
+                // Don't spawn if we've reached the steady reserve
+                const availableToSpawn = Math.max(0, this.frogQueue.length - this.steadyReserve);
+                spawnCount = Math.min(
+                    currentRate,
+                    availableToSpawn,
+                    this.maxFrogsOnScreen - this.frogs.length
+                );
+                this.spawnTimer = 0;
+            }
+        } else {
+            // STEADY PHASE: Doubled pace - spawn 2 at a time
+            this.spawnTimer++;
+            if (this.spawnTimer >= this.spawnInterval && this.frogQueue.length > 0) {
+                spawnCount = Math.min(2, this.frogQueue.length, this.maxFrogsOnScreen - this.frogs.length);
+                this.spawnTimer = 0;
+                // Add some randomness to spawn timing (reduced for faster pace)
+                this.spawnInterval = this.calculateSpawnInterval() + Math.floor(Math.random() * 5);
+            }
+        }
+
+        // Create the frogs with appropriate jump mode
+        for (let i = 0; i < spawnCount; i++) {
+            if (this.frogQueue.length > 0 && this.frogs.length < this.maxFrogsOnScreen) {
+                const frogData = this.frogQueue.shift();
+                this.frogs.push(new ParadeFrog(frogData.type, this.canvas.height, this.phase));
+            }
+        }
     }
 
     render() {
