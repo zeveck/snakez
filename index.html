@@ -167,7 +167,11 @@
                 <p id="finalScore">Score: 0</p>
                 <p id="finalWave">Waves Completed: 0</p>
                 <div id="frogCounts" class="frog-counts">
-                    <h3>Frogs Defeated</h3>
+                    <div class="frog-counts-header">
+                        <button id="paradeSpeedBtn" class="parade-control-btn" title="Cycle parade speed">❯</button>
+                        <h3>Frogs Defeated</h3>
+                        <button id="paradeReplayBtn" class="parade-control-btn" title="Replay parade">↻</button>
+                    </div>
                     <div class="frog-count-grid">
                         <div class="frog-count-item">
                             <img src="graphics/frog_small_idle.png" alt="Small Frog" class="frog-icon">
@@ -196,7 +200,7 @@
         </div>
     </div>
 
-    <div id="version">v0.4.7</div>
+    <div id="version">v0.4.8</div>
 
     <!-- Audio Toggle Button -->
     <button id="audioToggle" class="audio-toggle" aria-label="Toggle audio">

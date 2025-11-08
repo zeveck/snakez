@@ -455,10 +455,65 @@ body {
     border: 2px solid rgba(76, 175, 80, 0.3);
 }
 
+.frog-counts-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+    gap: 10px;
+}
+
 .frog-counts h3 {
     font-size: clamp(1rem, 3vw, 1.5rem);
     color: #4CAF50;
-    margin-bottom: 12px;
+    margin: 0;
+    flex: 1;
+    text-align: center;
+}
+
+.parade-control-btn {
+    background: rgba(76, 175, 80, 0.3);
+    border: 2px solid rgba(76, 175, 80, 0.5);
+    color: #4CAF50;
+    padding: 6px 12px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: clamp(0.85rem, 2.5vw, 1rem);
+    font-weight: bold;
+    font-family: 'Courier New', monospace;
+    transition: all 0.2s;
+    min-width: 40px;
+    width: 50px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.parade-control-btn:hover {
+    background: rgba(76, 175, 80, 0.5);
+    border-color: #4CAF50;
+    transform: scale(1.05);
+}
+
+.parade-control-btn:active {
+    transform: scale(0.95);
+}
+
+#paradeReplayBtn {
+    font-size: clamp(1.2rem, 3vw, 1.5rem);
+}
+
+#paradeReplayBtn.rotating {
+    animation: rotateOnce 0.5s ease-in-out;
+}
+
+@keyframes rotateOnce {
+    from {
+        transform: rotate(0deg);
+    }
+    to {
+        transform: rotate(360deg);
+    }
 }
 
 .frog-count-grid {

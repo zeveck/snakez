@@ -1249,9 +1249,16 @@ class FrogParade {
         this.waveSpawnRate = 0;
         this.steadyReserve = 0; // Minimum frogs reserved for steady phase
         this.maxFrogsOnScreen = 5000; // Performance cap
+
+        // Speed control and replay
+        this.speed = 1; // Current playback speed (1x, 2x, 3x)
+        this.originalDefeatedFrogs = []; // Store for replay
     }
 
     start(defeatedFrogs) {
+        // Store original list for replay
+        this.originalDefeatedFrogs = [...defeatedFrogs];
+
         // Get canvas and setup
         this.canvas = document.getElementById('paradeCanvas');
         if (!this.canvas) return;
@@ -1327,7 +1334,10 @@ class FrogParade {
     animate() {
         if (!this.running) return;
 
-        this.update();
+        // Update multiple times based on speed (1x, 2x, or 3x)
+        for (let i = 0; i < this.speed; i++) {
+            this.update();
+        }
         this.render();
 
         this.animationId = requestAnimationFrame(() => this.animate());
@@ -1425,6 +1435,20 @@ class FrogParade {
         if (this.ctx) {
             this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
         }
+    }
+
+    replay() {
+        // Stop current parade
+        this.stop();
+        // Restart with original defeated frogs
+        if (this.originalDefeatedFrogs.length > 0) {
+            this.start(this.originalDefeatedFrogs);
+        }
+    }
+
+    cycleSpeed() {
+        // Cycle through speeds: 1x -> 2x -> 3x -> 1x
+        this.speed = this.speed >= 3 ? 1 : this.speed + 1;
     }
 }
 
@@ -1583,6 +1607,26 @@ function initGame() {
         startBtn.addEventListener('click', () => startGame(false, null)); // Two-player co-op
         document.getElementById('restartBtn').addEventListener('click', restartGame);
         document.getElementById('titleBtn').addEventListener('click', returnToTitle);
+
+        // Parade control buttons
+        document.getElementById('paradeReplayBtn').addEventListener('click', () => {
+            if (frogParade) {
+                const replayBtn = document.getElementById('paradeReplayBtn');
+                replayBtn.classList.add('rotating');
+                setTimeout(() => replayBtn.classList.remove('rotating'), 500);
+                frogParade.replay();
+            }
+        });
+
+        document.getElementById('paradeSpeedBtn').addEventListener('click', () => {
+            if (frogParade) {
+                frogParade.cycleSpeed();
+                // Update button text with arrow symbols
+                const speedBtn = document.getElementById('paradeSpeedBtn');
+                const speedSymbols = ['❯', '❯❯', '❯❯❯'];
+                speedBtn.textContent = speedSymbols[frogParade.speed - 1];
+            }
+        });
 
         // How to Play toggle functionality
         const closeInstructionsBtn = document.getElementById('closeInstructions');
