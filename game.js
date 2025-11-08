@@ -405,8 +405,8 @@ const game = {
 
 // Input handlers
 const input = {
-    player1: { x: 0, y: 0, roll: false, grab: false },
-    player2: { x: 0, y: 0, roll: false, grab: false },
+    player1: { x: 0, y: 0, roll: false, whip: false },
+    player2: { x: 0, y: 0, roll: false, whip: false },
 };
 
 // Entity Classes
@@ -507,8 +507,8 @@ class Snake extends Entity {
         this.comboTimer = 0;
         this.rollTimer = 0;
         this.rollCooldown = 0;
-        this.grabTimer = 0;
-        this.grabCooldown = 0;
+        this.whipTimer = 0;
+        this.whipCooldown = 0;
         this.invulnerable = 0;
         this.segments = [];
         this.droppingThrough = false; // Flag for dropping through lily pads
@@ -540,8 +540,8 @@ class Snake extends Entity {
         // Update timers
         if (this.rollTimer > 0) this.rollTimer--;
         if (this.rollCooldown > 0) this.rollCooldown--;
-        if (this.grabTimer > 0) this.grabTimer--;
-        if (this.grabCooldown > 0) this.grabCooldown--;
+        if (this.whipTimer > 0) this.whipTimer--;
+        if (this.whipCooldown > 0) this.whipCooldown--;
         if (this.invulnerable > 0) this.invulnerable--;
         if (this.comboTimer > 0) {
             this.comboTimer--;
@@ -555,8 +555,8 @@ class Snake extends Entity {
         // Handle states
         if (this.state === 'rolling') {
             this.handleRollState();
-        } else if (this.state === 'grabbing') {
-            this.handleGrabState();
+        } else if (this.state === 'whipping') {
+            this.handleWhipState();
         } else {
             this.handleNormalMovement(playerInput);
         }
@@ -566,9 +566,9 @@ class Snake extends Entity {
             this.startRoll();
         }
 
-        // Grab attack
-        if (playerInput.grab && this.grabCooldown === 0 && this.state === 'idle') {
-            this.startGrab();
+        // Whip attack
+        if (playerInput.whip && this.whipCooldown === 0 && this.state === 'idle') {
+            this.startWhip();
         }
 
         // Update body segments
@@ -640,20 +640,20 @@ class Snake extends Entity {
         this.height = 40;
     }
 
-    startGrab() {
-        this.state = 'grabbing';
-        this.grabTimer = 20; // Tongue whip duration
-        this.grabCooldown = 60;
+    startWhip() {
+        this.state = 'whipping';
+        this.whipTimer = 20; // Tongue whip duration
+        this.whipCooldown = 60;
 
         // Damage enemies in range with tongue whip
         for (const enemy of game.enemies) {
-            if (enemy.alive && this.inGrabRange(enemy)) {
+            if (enemy.alive && this.inWhipRange(enemy)) {
                 this.hitEnemy(enemy, 30, this.facing * 12, -8);
             }
         }
     }
 
-    inGrabRange(enemy) {
+    inWhipRange(enemy) {
         const dx = enemy.x - this.x;
         const dy = enemy.y - this.y;
         const dist = Math.sqrt(dx * dx + dy * dy);
@@ -661,8 +661,8 @@ class Snake extends Entity {
         return dist < 100 && facingEnemy;
     }
 
-    handleGrabState() {
-        if (this.grabTimer === 0) {
+    handleWhipState() {
+        if (this.whipTimer === 0) {
             this.state = 'idle';
             this.width = 50;
             this.height = 40;
@@ -739,7 +739,7 @@ class Snake extends Entity {
 
         if (this.state === 'rolling') {
             spriteName = `${playerPrefix}_rolling`;
-        } else if (this.state === 'grabbing') {
+        } else if (this.state === 'whipping') {
             spriteName = `${playerPrefix}_extended`;
         } else if (this.inWater) {
             spriteName = `${playerPrefix}_swimming`;
@@ -770,7 +770,7 @@ class Snake extends Entity {
                 targetSize = 40; // Smaller for rolling ball
             } else if (this.inWater) {
                 targetSize = 80; // Larger for swimming visibility
-            } else if (this.state === 'grabbing') {
+            } else if (this.state === 'whipping') {
                 // Both whipping sprites are bigger
                 targetSize = this.playerId === 2 ? 85 : 75;
             } else if (!this.onGround) {
@@ -1169,7 +1169,7 @@ class ParadeFrog {
     draw(ctx) {
         // Determine sprite (idle when grounded for 3+ frames, jumping otherwise)
         const isIdle = this.groundedFrames >= 3;
-        const spriteSuffix = this.type === 'large' ? 'boss' : this.type;
+        const spriteSuffix = this.type === 'large' ? 'large_boss' : this.type;
         const spriteState = isIdle ? 'idle' : 'jumping';
         const spriteName = `frog_${spriteSuffix}_${spriteState}`;
         const sprite = assets.get(spriteName);
@@ -1241,12 +1241,12 @@ class FrogParade {
     }
 
     calculateSpawnInterval() {
-        // More concurrent frogs - spawn 2-3x as many at once without performance issues
-        const baseInterval = 6; // frames (~10 frogs/second at 60 FPS)
+        // 2x density - doubled spawn rate for much denser parade
+        const baseInterval = 3; // frames (~20 frogs/second at 60 FPS)
         const count = this.frogQueue.length;
-        if (count > 100) return 3;   // Very dense - ~20 frogs/second
-        if (count > 50) return 4;    // Dense - 15 frogs/second
-        if (count > 20) return 5;    // Moderate density - 12 frogs/second
+        if (count > 100) return 1;   // Ultra dense - ~60 frogs/second
+        if (count > 50) return 2;    // Very dense - ~30 frogs/second
+        if (count > 20) return 2;    // Dense - ~30 frogs/second
         return baseInterval;
     }
 
@@ -1746,19 +1746,19 @@ function setupControls() {
         if (game.singlePlayer) {
             const activeInput = game.activePlayer === 0 ? input.player1 : input.player2;
             if (e.key === '0' || e.code === 'Digit0' || e.code === 'Numpad0') activeInput.roll = true;
-            if (e.key === '1' || e.code === 'Digit1') activeInput.grab = true;
+            if (e.key === '1' || e.code === 'Digit1') activeInput.whip = true;
         }
 
         // Player 1 controls (Arrows + 0/1) - two player mode
         if (!game.singlePlayer) {
             if (e.key === '0' || e.code === 'Digit0' || e.code === 'Numpad0') input.player1.roll = true;
-            if (e.key === '1' || e.code === 'Digit1') input.player1.grab = true;
+            if (e.key === '1' || e.code === 'Digit1') input.player1.whip = true;
         }
 
         // Player 2 controls (WASD + F/G) - two player mode
         if (!game.singlePlayer) {
             if (e.key.toLowerCase() === 'f') input.player2.roll = true;
-            if (e.key.toLowerCase() === 'g') input.player2.grab = true;
+            if (e.key.toLowerCase() === 'g') input.player2.whip = true;
         }
     });
 
@@ -1769,15 +1769,15 @@ function setupControls() {
         if (game.singlePlayer) {
             const activeInput = game.activePlayer === 0 ? input.player1 : input.player2;
             if (e.key === '0' || e.code === 'Digit0' || e.code === 'Numpad0') activeInput.roll = false;
-            if (e.key === '1' || e.code === 'Digit1') activeInput.grab = false;
+            if (e.key === '1' || e.code === 'Digit1') activeInput.whip = false;
         }
 
         // Two player controls
         if (!game.singlePlayer) {
             if (e.key === '0' || e.code === 'Digit0' || e.code === 'Numpad0') input.player1.roll = false;
-            if (e.key === '1' || e.code === 'Digit1') input.player1.grab = false;
+            if (e.key === '1' || e.code === 'Digit1') input.player1.whip = false;
             if (e.key.toLowerCase() === 'f') input.player2.roll = false;
-            if (e.key.toLowerCase() === 'g') input.player2.grab = false;
+            if (e.key.toLowerCase() === 'g') input.player2.whip = false;
         }
     });
 
@@ -1829,16 +1829,16 @@ function setupMobileControls() {
         btn.addEventListener('touchstart', (e) => {
             if (btn.classList.contains('roll-btn')) {
                 playerInput.roll = true;
-            } else if (btn.classList.contains('grab-btn')) {
-                playerInput.grab = true;
+            } else if (btn.classList.contains('whip-btn')) {
+                playerInput.whip = true;
             }
         }, { passive: true });
 
         btn.addEventListener('touchend', (e) => {
             if (btn.classList.contains('roll-btn')) {
                 playerInput.roll = false;
-            } else if (btn.classList.contains('grab-btn')) {
-                playerInput.grab = false;
+            } else if (btn.classList.contains('whip-btn')) {
+                playerInput.whip = false;
             }
         }, { passive: true });
     });
@@ -1946,8 +1946,8 @@ function startGame(singlePlayer = false, activePlayer = null) {
         player.state = 'idle';
         player.rollTimer = 0;
         player.rollCooldown = 0;
-        player.grabTimer = 0;
-        player.grabCooldown = 0;
+        player.whipTimer = 0;
+        player.whipCooldown = 0;
         player.invulnerable = 0;
         player.onGround = false;
         player.width = 50;

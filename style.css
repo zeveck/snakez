@@ -417,13 +417,13 @@ body {
     transform: scale(0.95);
 }
 
-.grab-btn {
+.whip-btn {
     background: radial-gradient(circle, #FF9800 0%, #E65100 100%);
     border-color: #bf360c;
     color: white;
 }
 
-.grab-btn:active {
+.whip-btn:active {
     background: radial-gradient(circle, #E65100 0%, #FF9800 100%);
     transform: scale(0.95);
 }
