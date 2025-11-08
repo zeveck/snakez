@@ -22,7 +22,7 @@ const assets = {
     manifest: {
         // Title and backgrounds
         'logo_title': 'graphics/logo_title.png',
-        'background_swamp': 'graphics/background_swamp.png',
+        'background_swamp': 'graphics/swamp-background-day.png',
         'title_background': 'graphics/title-background_swamp.png',
         'water_tile': 'graphics/snakez_water_tile_64.png',
 
@@ -2218,32 +2218,38 @@ function update() {
 function render() {
     const ctx = game.ctx;
 
-    // Clear canvas
-    ctx.fillStyle = '#87CEEB';
-    ctx.fillRect(0, 0, CONFIG.CANVAS_WIDTH, CONFIG.CANVAS_HEIGHT);
+    // Draw background image
+    const bg = assets.get('background_swamp');
+    if (bg) {
+        ctx.drawImage(bg, 0, 0, CONFIG.CANVAS_WIDTH, CONFIG.CANVAS_HEIGHT);
+    } else {
+        // Fallback to gradient if image not loaded
+        ctx.fillStyle = '#87CEEB';
+        ctx.fillRect(0, 0, CONFIG.CANVAS_WIDTH, CONFIG.CANVAS_HEIGHT);
 
-    // Draw background gradient (sky)
-    const gradient = ctx.createLinearGradient(0, 0, 0, CONFIG.WATER_LEVEL);
-    gradient.addColorStop(0, '#87CEEB');
-    gradient.addColorStop(1, '#B0E0E6');
-    ctx.fillStyle = gradient;
-    ctx.fillRect(0, 0, CONFIG.CANVAS_WIDTH, CONFIG.WATER_LEVEL);
+        // Draw background gradient (sky)
+        const gradient = ctx.createLinearGradient(0, 0, 0, CONFIG.WATER_LEVEL);
+        gradient.addColorStop(0, '#87CEEB');
+        gradient.addColorStop(1, '#B0E0E6');
+        ctx.fillStyle = gradient;
+        ctx.fillRect(0, 0, CONFIG.CANVAS_WIDTH, CONFIG.WATER_LEVEL);
 
-    // Draw water
-    ctx.fillStyle = '#4FC3F7';
-    ctx.fillRect(0, CONFIG.WATER_LEVEL, CONFIG.CANVAS_WIDTH, CONFIG.CANVAS_HEIGHT - CONFIG.WATER_LEVEL);
+        // Draw water
+        ctx.fillStyle = '#4FC3F7';
+        ctx.fillRect(0, CONFIG.WATER_LEVEL, CONFIG.CANVAS_WIDTH, CONFIG.CANVAS_HEIGHT - CONFIG.WATER_LEVEL);
 
-    // Water waves effect
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
-    ctx.lineWidth = 2;
-    for (let i = 0; i < 3; i++) {
-        ctx.beginPath();
-        for (let x = 0; x < CONFIG.CANVAS_WIDTH; x += 20) {
-            const y = CONFIG.WATER_LEVEL + Math.sin((x + Date.now() / 200 + i * 100) / 30) * 5 + i * 15;
-            if (x === 0) ctx.moveTo(x, y);
-            else ctx.lineTo(x, y);
+        // Water waves effect
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
+        ctx.lineWidth = 2;
+        for (let i = 0; i < 3; i++) {
+            ctx.beginPath();
+            for (let x = 0; x < CONFIG.CANVAS_WIDTH; x += 20) {
+                const y = CONFIG.WATER_LEVEL + Math.sin((x + Date.now() / 200 + i * 100) / 30) * 5 + i * 15;
+                if (x === 0) ctx.moveTo(x, y);
+                else ctx.lineTo(x, y);
+            }
+            ctx.stroke();
         }
-        ctx.stroke();
     }
 
     // Draw lily pads
