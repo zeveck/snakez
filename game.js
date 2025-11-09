@@ -24,7 +24,6 @@ const assets = {
         'logo_title': 'graphics/logo_title.png',
         'background_swamp': 'graphics/swamp-background-day.png',
         'title_background': 'graphics/title-background_swamp.png',
-        'water_tile': 'graphics/snakez_water_tile_64.png',
 
         // Player 1 (Green Snake)
         'snake_p1_idle': 'graphics/snake_p1_idle.png',
@@ -37,7 +36,6 @@ const assets = {
         'snake_p2_idle': 'graphics/snake_p2_idle.png',
         'snake_p2_extended': 'graphics/snake_p2_extended.png',
         'snake_p2_jumping': 'graphics/snake_p2_jumping.png',
-        'snake_p2_biting': 'graphics/snake_p2_biting.png',
         'snake_p2_rolling': 'graphics/snake_p2_rolling.png',
         'snake_p2_swimming': 'graphics/snake_p2_swimming.png',
 
