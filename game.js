@@ -1588,28 +1588,33 @@ function initGame() {
             gameOverBg.src = bg.src;
         }
 
-        // Initialize audio manager
-        audioManager.init();
-
-        // Create players
-        game.players = [
-            new Snake(100, 300, 1, '#4CAF50'),
-            new Snake(200, 300, 2, '#FF9800')
-        ];
-
-        // Create initial lily pads
-        createLilyPads();
-
-        // Setup controls
-        setupControls();
-
-        // Detect mobile device
-        detectMobile();
-
-        // UI event listeners
-        startBtn.addEventListener('click', () => startGame(false, null)); // Two-player co-op
+        // Set up Game Over button listeners (before shared URL check so they work on shared results)
         document.getElementById('restartBtn').addEventListener('click', restartGame);
         document.getElementById('titleBtn').addEventListener('click', returnToTitle);
+        document.getElementById('shareBtn').addEventListener('click', () => {
+            // Calculate frog counts from game.defeatedFrogs
+            const frogCounts = { small: 0, medium: 0, poison_dart: 0, large: 0 };
+            game.defeatedFrogs.forEach(frog => {
+                if (frogCounts.hasOwnProperty(frog.type)) {
+                    frogCounts[frog.type]++;
+                }
+            });
+
+            // Generate URL
+            const url = `${window.location.origin}${window.location.pathname}#score=${game.score}&waves=${game.wave - 1}&small=${frogCounts.small}&medium=${frogCounts.medium}&poison=${frogCounts.poison_dart}&boss=${frogCounts.large}`;
+
+            // Copy to clipboard
+            navigator.clipboard.writeText(url).then(() => {
+                // Show feedback
+                const feedback = document.getElementById('shareFeedback');
+                feedback.style.display = 'block';
+                setTimeout(() => {
+                    feedback.style.display = 'none';
+                }, 2000);
+            }).catch(err => {
+                console.error('Failed to copy URL:', err);
+            });
+        });
 
         // Parade control buttons
         document.getElementById('paradeReplayBtn').addEventListener('click', () => {
@@ -1630,6 +1635,37 @@ function initGame() {
                 speedBtn.textContent = speedSymbols[frogParade.speed - 1];
             }
         });
+
+        // Check for shared Game Over URL
+        const urlData = parseGameOverURL();
+        if (urlData) {
+            // Skip title screen, go directly to Game Over with shared data
+            populateFromURL(urlData);
+            game.isSharedResult = true;
+            gameOver(true);
+            return; // Stop initialization here
+        }
+
+        // Initialize audio manager
+        audioManager.init();
+
+        // Create players
+        game.players = [
+            new Snake(100, 300, 1, '#4CAF50'),
+            new Snake(200, 300, 2, '#FF9800')
+        ];
+
+        // Create initial lily pads
+        createLilyPads();
+
+        // Setup controls
+        setupControls();
+
+        // Detect mobile device
+        detectMobile();
+
+        // UI event listeners
+        startBtn.addEventListener('click', () => startGame(false, null)); // Two-player co-op
 
         // How to Play toggle functionality
         const closeInstructionsBtn = document.getElementById('closeInstructions');
@@ -2137,6 +2173,13 @@ function restartGame() {
     if (frogParade) {
         frogParade.stop();
     }
+
+    // If coming from shared URL, reload page to get full initialization
+    if (game.isSharedResult) {
+        window.location.href = window.location.origin + window.location.pathname;
+        return;
+    }
+
     startGame();
 }
 
@@ -2145,6 +2188,13 @@ function returnToTitle() {
     if (frogParade) {
         frogParade.stop();
     }
+
+    // If coming from shared URL, reload page to get full initialization
+    if (game.isSharedResult) {
+        window.location.href = window.location.origin + window.location.pathname;
+        return;
+    }
+
     setScreen('title');
     audioManager.playTitle();
 }
@@ -2304,9 +2354,59 @@ function updateHUD() {
     }
 }
 
-function gameOver() {
+// Parse Game Over URL parameters for shareable results
+function parseGameOverURL() {
+    const hash = window.location.hash.substring(1);
+    if (!hash) return null;
+
+    const params = new URLSearchParams(hash);
+
+    // Check if this is a game over share URL
+    if (!params.has('score')) return null;
+
+    const score = parseInt(params.get('score'));
+    const waves = parseInt(params.get('waves'));
+    const small = parseInt(params.get('small'));
+    const medium = parseInt(params.get('medium'));
+    const poison = parseInt(params.get('poison'));
+    const boss = parseInt(params.get('boss'));
+
+    // Validate all are non-negative integers
+    if (isNaN(score) || score < 0 || isNaN(waves) || waves < 0 ||
+        isNaN(small) || small < 0 || isNaN(medium) || medium < 0 ||
+        isNaN(poison) || poison < 0 || isNaN(boss) || boss < 0) {
+        return null;
+    }
+
+    return { score, waves, small, medium, poison, boss };
+}
+
+// Populate game state from URL parameters
+function populateFromURL(urlData) {
+    game.score = urlData.score;
+    game.wave = urlData.waves + 1; // Add 1 because gameOver() displays wave - 1
+
+    // Build defeatedFrogs array
+    game.defeatedFrogs = [];
+    for (let i = 0; i < urlData.small; i++) {
+        game.defeatedFrogs.push({ type: 'small' });
+    }
+    for (let i = 0; i < urlData.medium; i++) {
+        game.defeatedFrogs.push({ type: 'medium' });
+    }
+    for (let i = 0; i < urlData.poison; i++) {
+        game.defeatedFrogs.push({ type: 'poison_dart' });
+    }
+    for (let i = 0; i < urlData.boss; i++) {
+        game.defeatedFrogs.push({ type: 'large' });
+    }
+}
+
+function gameOver(isSharedResult = false) {
     game.running = false;
-    audioManager.stopAll();
+    if (!isSharedResult) {
+        audioManager.stopAll();
+    }
     document.getElementById('finalScore').textContent = `Score: ${game.score}`;
     document.getElementById('finalWave').textContent = `Waves Completed: ${game.wave - 1}`;
 
@@ -2329,6 +2429,24 @@ function gameOver() {
     document.getElementById('mediumFrogCount').textContent = frogCounts.medium;
     document.getElementById('poisonFrogCount').textContent = frogCounts.poison_dart;
     document.getElementById('bossFrogCount').textContent = frogCounts.large;
+
+    // Update buttons for shared results
+    const shareBtn = document.getElementById('shareBtn');
+    const restartBtn = document.getElementById('restartBtn');
+    const titleBtn = document.getElementById('titleBtn');
+
+    if (isSharedResult) {
+        // Hide share button (can't share a share)
+        if (shareBtn) shareBtn.style.display = 'none';
+        // Change "Play Again" to "Play" and hide "Return to Title"
+        if (restartBtn) restartBtn.textContent = 'Play';
+        if (titleBtn) titleBtn.style.display = 'none';
+    } else {
+        // Regular game over - show all buttons with normal text
+        if (shareBtn) shareBtn.style.display = '';
+        if (restartBtn) restartBtn.textContent = 'Play Again';
+        if (titleBtn) titleBtn.style.display = '';
+    }
 
     setTimeout(() => {
         // Background already set during init, just show the screen

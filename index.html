@@ -62,6 +62,22 @@
       }
     }
     </script>
+
+    <!-- Check for shared Game Over URL and hide title screen if present -->
+    <script>
+    (function() {
+        const hash = window.location.hash.substring(1);
+        if (hash && hash.includes('score=')) {
+            // Add style to hide title screen and set dark green background
+            const style = document.createElement('style');
+            style.textContent = `
+                #titleScreen { display: none !important; }
+                body { background: #1a4d2e !important; }
+            `;
+            document.head.appendChild(style);
+        }
+    })();
+    </script>
 </head>
 <body>
     <div id="gameContainer">
@@ -165,7 +181,7 @@
             <img id="gameOverBg" class="game-over-bg" alt="">
             <div class="game-over-overlay"></div>
             <div class="game-over-content">
-                <h1>Game Over</h1>
+                <img src="graphics/logo_title.png" alt="Snake Style" class="game-over-logo">
                 <p id="finalScore">Score: 0</p>
                 <p id="finalWave">Waves Completed: 0</p>
                 <div id="frogCounts" class="frog-counts">
@@ -194,15 +210,17 @@
                     </div>
                 </div>
                 <div class="game-over-buttons">
+                    <button id="shareBtn" class="game-btn share-btn" title="Copy shareable link">📤 Share</button>
                     <button id="restartBtn" class="game-btn">Play Again</button>
                     <button id="titleBtn" class="game-btn secondary-btn">Return to Title</button>
                 </div>
+                <div id="shareFeedback" class="share-feedback" style="display: none;">Link Copied!</div>
             </div>
             <canvas id="paradeCanvas"></canvas>
         </div>
     </div>
 
-    <div id="version">v0.4.12</div>
+    <div id="version">v0.4.13</div>
 
     <!-- Audio Toggle Button -->
     <button id="audioToggle" class="audio-toggle" aria-label="Toggle audio">
