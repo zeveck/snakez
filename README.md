@@ -1,6 +1,6 @@
 # Snake Style 🐍⚔️
 
-**Version 0.4.11** - A swamp-based 2-player cooperative beat 'em up arcade game
+**Version 0.4.12** - A swamp-based 2-player cooperative beat 'em up arcade game
 
 Fight alongside your friend as serpent warriors defending the swamp from endless waves of hostile frogs!
 
@@ -137,7 +137,13 @@ All pixel art graphics are located in the `/graphics` folder:
 
 ## 📝 Version History
 
-### v0.4.11 (Current)
+### v0.4.12 (Current)
+- 🗑️ Removed unused healthbar UI graphics (~1.4 MB)
+- ⚡ Optimized backgrounds: converted to JPG format (saved ~4.4 MB)
+- 🧹 Cleaned up unused ChatGPT placeholder image
+- 🐛 Fixed Game Over screen background flash by pre-rendering
+
+### v0.4.11
 - 🧹 Removed unused assets from manifest (water_tile, snake_p2_biting)
 - 🐛 Eliminated 404 errors on asset loading
 

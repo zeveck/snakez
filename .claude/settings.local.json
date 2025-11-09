@@ -54,7 +54,10 @@
       "Bash(sed:*)",
       "Bash(for f in graphics/snake_p1_idle.png graphics/snake_p2_idle.png)",
       "Bash(do echo $f:)",
-      "Bash(cat:*)"
+      "Bash(cat:*)",
+      "Bash(awk:*)",
+      "Bash(sort:*)",
+      "Bash(for f in /workspaces/snakez/graphics/*.png)"
     ],
     "deny": []
   },

@@ -22,8 +22,8 @@ const assets = {
     manifest: {
         // Title and backgrounds
         'logo_title': 'graphics/logo_title.png',
-        'background_swamp': 'graphics/swamp-background-day.png',
-        'title_background': 'graphics/title-background_swamp.png',
+        'background_swamp': 'graphics/swamp-background-day.jpg',
+        'title_background': 'graphics/title-background_swamp.jpg',
 
         // Player 1 (Green Snake)
         'snake_p1_idle': 'graphics/snake_p1_idle.png',
@@ -60,8 +60,6 @@ const assets = {
         'effect_death_particles': 'graphics/effect_death_particles.png',
 
         // UI
-        'ui_healthbar_frame': 'graphics/ui_healthbar_frame.png',
-        'ui_healthbar_fill': 'graphics/ui_healthbar_fill.png',
         'ui_combo_star': 'graphics/ui_combo_star.png',
     },
 
@@ -1583,6 +1581,13 @@ function initGame() {
         startBtn.disabled = false;
         console.log('All assets loaded successfully!');
 
+        // Pre-render Game Over background so it's ready when needed
+        const gameOverBg = document.getElementById('gameOverBg');
+        const bg = assets.get('background_swamp');
+        if (gameOverBg && bg && bg.complete) {
+            gameOverBg.src = bg.src;
+        }
+
         // Initialize audio manager
         audioManager.init();
 
@@ -2326,6 +2331,7 @@ function gameOver() {
     document.getElementById('bossFrogCount').textContent = frogCounts.large;
 
     setTimeout(() => {
+        // Background already set during init, just show the screen
         setScreen('gameover');
 
         // Start the frog parade
