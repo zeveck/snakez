@@ -1248,7 +1248,7 @@ class FrogParade {
         this.transitionDuration = 0;
         this.waveSpawnRate = 0;
         this.steadyReserve = 0; // Minimum frogs reserved for steady phase
-        this.maxFrogsOnScreen = 5000; // Performance cap
+        this.maxFrogsOnScreen = 2500; // Performance cap
 
         // Speed control and replay
         this.speed = 1; // Current playback speed (1x, 2x, 3x)
