@@ -1576,8 +1576,11 @@ function initGame() {
                 }
             });
 
+            // Get snake ID from player or selectedSnakeId
+            const snakeId = game.player ? game.player.variant.id : (game.selectedSnakeId || 'green');
+
             // Generate URL
-            const url = `${window.location.origin}${window.location.pathname}#score=${game.score}&waves=${game.wave - 1}&small=${frogCounts.small}&medium=${frogCounts.medium}&poison=${frogCounts.poison_dart}&boss=${frogCounts.large}`;
+            const url = `${window.location.origin}${window.location.pathname}#score=${game.score}&waves=${game.wave - 1}&small=${frogCounts.small}&medium=${frogCounts.medium}&poison=${frogCounts.poison_dart}&boss=${frogCounts.large}&snake=${snakeId}`;
 
             // Copy to clipboard
             navigator.clipboard.writeText(url).then(() => {
@@ -2116,14 +2119,15 @@ function restartGame() {
         frogParade.stop();
     }
 
-    // If coming from shared URL, reload page to get full initialization
+    // If coming from shared URL, we need to start fresh but remember the snake
     if (game.isSharedResult) {
-        window.location.href = window.location.origin + window.location.pathname;
-        return;
-    }
-
-    // Remember which snake we were playing as for Play Again
-    if (game.player && game.player.variant) {
+        // Remember the snake before clearing shared result flag
+        const snakeId = game.selectedSnakeId || 'green';
+        game.isSharedResult = false;
+        game.selectedSnakeId = snakeId;
+        // Fall through to regular startGame()
+    } else if (game.player && game.player.variant) {
+        // Remember which snake we were playing as for Play Again
         game.selectedSnakeId = game.player.variant.id;
     }
 
@@ -2284,6 +2288,30 @@ function updateHUD() {
         playerName.textContent = game.player.variant.displayName;
     }
 
+    // Update player portrait based on current action (match main sprite rendering logic)
+    const portrait = document.getElementById('player-portrait');
+    if (portrait && game.player.variant) {
+        const spritePrefix = game.player.variant.spritePrefix;
+        let spriteName = `${spritePrefix}_idle`;
+
+        if (game.player.state === 'rolling') {
+            spriteName = `${spritePrefix}_rolling`;
+        } else if (game.player.state === 'whipping') {
+            spriteName = `${spritePrefix}_extended`;
+        } else if (game.player.inWater) {
+            spriteName = `${spritePrefix}_swimming`;
+        } else if (!game.player.onGround) {
+            spriteName = `${spritePrefix}_jumping`;
+        }
+
+        // Update portrait src if sprite is available (fallback to idle if sprite missing)
+        if (assets.images[spriteName]) {
+            portrait.src = assets.images[spriteName].src;
+        } else if (assets.images[`${spritePrefix}_idle`]) {
+            portrait.src = assets.images[`${spritePrefix}_idle`].src;
+        }
+    }
+
     const waveNumber = document.getElementById('waveNumber');
     if (waveNumber) {
         waveNumber.textContent = `Wave ${game.wave}`;
@@ -2311,6 +2339,7 @@ function parseGameOverURL() {
     const medium = parseInt(params.get('medium'));
     const poison = parseInt(params.get('poison'));
     const boss = parseInt(params.get('boss'));
+    const snake = params.get('snake') || 'green'; // Default to green/Jade if not specified
 
     // Validate all are non-negative integers
     if (isNaN(score) || score < 0 || isNaN(waves) || waves < 0 ||
@@ -2319,13 +2348,19 @@ function parseGameOverURL() {
         return null;
     }
 
-    return { score, waves, small, medium, poison, boss };
+    // Validate snake is valid ID
+    if (snake !== 'green' && snake !== 'orange') {
+        return null;
+    }
+
+    return { score, waves, small, medium, poison, boss, snake };
 }
 
 // Populate game state from URL parameters
 function populateFromURL(urlData) {
     game.score = urlData.score;
     game.wave = urlData.waves + 1; // Add 1 because gameOver() displays wave - 1
+    game.selectedSnakeId = urlData.snake; // Remember which snake was used
 
     // Build defeatedFrogs array
     game.defeatedFrogs = [];
@@ -2370,6 +2405,19 @@ function gameOver(isSharedResult = false) {
     document.getElementById('mediumFrogCount').textContent = frogCounts.medium;
     document.getElementById('poisonFrogCount').textContent = frogCounts.poison_dart;
     document.getElementById('bossFrogCount').textContent = frogCounts.large;
+
+    // Update snake portrait on Game Over screen
+    const snakeId = game.selectedSnakeId || 'green';
+    const variant = SNAKE_VARIANTS[snakeId];
+    const gameOverPortrait = document.getElementById('gameOverSnakePortrait');
+
+    if (gameOverPortrait && variant) {
+        const spriteName = `${variant.spritePrefix}_idle`;
+        if (assets.images[spriteName]) {
+            gameOverPortrait.src = assets.images[spriteName].src;
+        }
+    }
+
 
     // Update buttons for shared results
     const shareBtn = document.getElementById('shareBtn');

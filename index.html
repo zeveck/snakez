@@ -116,11 +116,16 @@
 
             <div id="hud">
                 <div class="player-hud">
-                    <div class="player-name" id="player-name">Snake</div>
-                    <div class="health-bar">
-                        <div id="player-health" class="health-fill"></div>
+                    <div class="hud-top">
+                        <img id="player-portrait" class="player-portrait" src="" alt="">
+                        <div class="hud-info">
+                            <div class="player-name" id="player-name">Snake</div>
+                            <div class="health-bar">
+                                <div id="player-health" class="health-fill"></div>
+                            </div>
+                            <div class="combo">Combo: <span id="player-combo">0</span></div>
+                        </div>
                     </div>
-                    <div class="combo">Combo: <span id="player-combo">0</span></div>
                 </div>
                 <div class="wave-info">
                     <div id="waveNumber">Wave 1</div>
@@ -157,8 +162,14 @@
             <div class="game-over-overlay"></div>
             <div class="game-over-content">
                 <img src="graphics/logo_title.png" alt="Snake Style" class="game-over-logo">
-                <p id="finalScore">Score: 0</p>
-                <p id="finalWave">Waves Completed: 0</p>
+                <div class="game-over-scores-wrapper">
+                    <img id="gameOverSnakePortrait" class="game-over-snake-portrait" src="" alt="">
+                    <div class="game-over-scores-center">
+                        <p id="finalScore">Score: 0</p>
+                        <p id="finalWave">Waves Completed: 0</p>
+                    </div>
+                    <div class="game-over-spacer"></div>
+                </div>
                 <div id="frogCounts" class="frog-counts">
                     <div class="frog-counts-header">
                         <button id="paradeSpeedBtn" class="parade-control-btn" title="Cycle parade speed">❯</button>
@@ -195,7 +206,7 @@
         </div>
     </div>
 
-    <div id="version">v0.5.3</div>
+    <div id="version">v0.5.4</div>
 
     <!-- Audio Toggle Button -->
     <button id="audioToggle" class="audio-toggle" aria-label="Toggle audio">

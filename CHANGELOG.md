@@ -4,6 +4,20 @@ All notable changes to Snake Style will be documented in this file.
 
 For the most up-to-date version history, see the "Version History" section in README.md.
 
+## [0.5.4] - 2025-11-11
+
+### Added
+- Snake portrait in HUD that animates based on player actions (idle, rolling, whipping, jumping)
+- Snake portrait in corner of "Frogs Defeated" box on Game Over screen
+- Snake parameter in shareable URLs to preserve character selection
+
+### Changed
+- Share URLs now include snake parameter (e.g., `&snake=green` or `&snake=orange`)
+- "Play" and "Play Again" buttons now use the snake from shared URLs
+- Playing from a shared URL preserves the character from that game
+- HUD layout updated with portrait alongside player stats
+- Game Over screen layout optimized with centered scores and corner snake portrait
+
 ## [0.5.3] - 2025-11-11
 
 ### Changed

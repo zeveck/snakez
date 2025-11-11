@@ -205,6 +205,25 @@ body {
     min-width: 150px;
 }
 
+.hud-top {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+
+.player-portrait {
+    width: 60px;
+    height: 60px;
+    object-fit: contain;
+    image-rendering: pixelated;
+    flex-shrink: 0;
+}
+
+.hud-info {
+    flex: 1;
+    min-width: 0;
+}
+
 .player-name {
     font-size: clamp(0.9rem, 2.5vw, 1.2rem);
     font-weight: bold;
@@ -449,6 +468,35 @@ body {
     filter: drop-shadow(3px 3px 6px rgba(0,0,0,0.8));
 }
 
+.game-over-scores-wrapper {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    align-items: center;
+    justify-items: center;
+    gap: 15px;
+    margin: 15px 0;
+}
+
+.game-over-snake-portrait {
+    width: 70px !important;
+    height: 70px !important;
+    object-fit: contain;
+    image-rendering: pixelated;
+    filter: drop-shadow(2px 2px 4px rgba(0,0,0,0.8));
+    justify-self: end;
+    position: static !important;
+    left: auto !important;
+    top: auto !important;
+}
+
+.game-over-scores-center {
+    text-align: center;
+}
+
+.game-over-spacer {
+    width: 70px;
+}
+
 #gameOverScreen h1 {
     font-size: clamp(2rem, 8vw, 4rem);
     color: #ff6b6b;
@@ -462,16 +510,12 @@ body {
     color: #FFD700;
 }
 
-#finalScore {
-    margin-top: -30px;
-}
-
 .frog-counts {
     margin: 20px 0;
     padding: 15px;
-    background: rgba(0, 0, 0, 0.3);
+    background: rgba(0, 0, 0, 0.5);
     border-radius: 10px;
-    border: 2px solid rgba(76, 175, 80, 0.3);
+    border: 2px solid rgba(76, 175, 80, 0.4);
 }
 
 .frog-counts-header {
