@@ -4,6 +4,16 @@ All notable changes to Snake Style will be documented in this file.
 
 For the most up-to-date version history, see the "Version History" section in README.md.
 
+## [0.5.3] - 2025-11-11
+
+### Changed
+- Selection indicator now only appears after user interaction (click or arrow key press)
+- Title screen no longer shows a pre-selected snake on initial load
+- Improved first-time user experience by requiring explicit character selection
+- Removed localStorage persistence for character selection
+- "Play Again" now remembers your character, but "Return to Title" clears selection
+- Character selection defaults to Jade when starting a new game
+
 ## [0.5.2] - 2025-11-11
 
 ### Changed

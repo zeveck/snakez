@@ -416,10 +416,10 @@ const game = {
     screen: 'title',
     defeatedFrogs: [],
     titleSnakes: {
-        left: { y: 0, vy: 0, jumping: false, selected: true },
+        left: { y: 0, vy: 0, jumping: false, selected: false },
         right: { y: 0, vy: 0, jumping: false, selected: false }
     },
-    selectedSnakeId: 'green',
+    selectedSnakeId: null,
     isMobile: false,
 };
 
@@ -1764,25 +1764,6 @@ function initGame() {
         };
         titleScreen.addEventListener('mousemove', handleTitleHover);
 
-        // Restore saved selection from localStorage if available
-        try {
-            const savedSelection = localStorage.getItem('snakeStyleSelectedSnake');
-            if (savedSelection === 'green' || savedSelection === 'orange') {
-                game.selectedSnakeId = savedSelection;
-                game.titleSnakes.left.selected = (savedSelection === 'green');
-                game.titleSnakes.right.selected = (savedSelection === 'orange');
-            }
-        } catch (e) {
-            // localStorage may be disabled or unavailable
-        }
-
-        // Fallback to Jade if no selection set
-        if (!game.selectedSnakeId) {
-            game.selectedSnakeId = 'green';
-            game.titleSnakes.left.selected = true;
-            game.titleSnakes.right.selected = false;
-        }
-
         // Draw title screen with graphics
         drawTitleScreen();
     });
@@ -2077,13 +2058,6 @@ function selectSnake(snakeId) {
     game.titleSnakes.left.selected = (snakeId === 'green');
     game.titleSnakes.right.selected = (snakeId === 'orange');
 
-    // Persist selection to localStorage (optional feature)
-    try {
-        localStorage.setItem('snakeStyleSelectedSnake', snakeId);
-    } catch (e) {
-        // Ignore localStorage errors (e.g., disabled, quota exceeded)
-    }
-
     drawTitleScreen();
 
     // Visual feedback: make the selected snake jump
@@ -2148,6 +2122,11 @@ function restartGame() {
         return;
     }
 
+    // Remember which snake we were playing as for Play Again
+    if (game.player && game.player.variant) {
+        game.selectedSnakeId = game.player.variant.id;
+    }
+
     startGame();
 }
 
@@ -2158,11 +2137,10 @@ function returnToTitle() {
     game.running = false;
     audioManager.stopAll();
 
-    // Selection persists across game sessions
-    // Optionally reset to default by uncommenting:
-    // game.selectedSnakeId = 'green';
-    // game.titleSnakes.left.selected = true;
-    // game.titleSnakes.right.selected = false;
+    // Clear selection when returning to title
+    game.selectedSnakeId = null;
+    game.titleSnakes.left.selected = false;
+    game.titleSnakes.right.selected = false;
 
     setScreen('title');
     drawTitleScreen();
