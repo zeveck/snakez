@@ -1,6 +1,6 @@
 # Snake Style 🐍⚔️
 
-**Version 0.5.0** - A swamp-based beat 'em up arcade game with character selection
+**Version 0.5.2** - A swamp-based beat 'em up arcade game with character selection
 
 Choose your serpent warrior and defend the swamp from endless waves of hostile frogs!
 
@@ -11,7 +11,7 @@ Choose your serpent warrior and defend the swamp from endless waves of hostile f
 ## 🎮 Game Features
 
 ### Core Gameplay
-- **Character Selection** - Choose between the green or orange snake warrior
+- **Character Selection** - Choose between Jade or Blaze
 - **Wave-Based Combat** - Survive increasingly difficult frog invasions
 - **Combo System** - Chain attacks together for massive score multipliers
 - **Multiple Enemy Types** - Small, medium, and boss-sized frogs with unique behaviors
@@ -47,7 +47,7 @@ Each snake warrior has two powerful attacks:
 
 ## 🎯 How to Play
 
-1. **Select Your Snake** - Click on the green or orange snake on the title screen
+1. **Select Your Snake** - Click on Jade or Blaze on the title screen
 2. **Start the Game** - Click "Start" or press Enter
 3. **Audio Controls** - Click the speaker icon (lower left) to toggle audio; right-click for volume controls
 4. **Survive the Waves** - Defeat all frogs to progress to the next wave

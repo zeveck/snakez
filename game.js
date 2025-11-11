@@ -16,7 +16,7 @@ const CONFIG = {
 const SNAKE_VARIANTS = {
     green: {
         id: 'green',
-        displayName: 'Green Snake',
+        displayName: 'Jade',
         color: '#4CAF50',
         spritePrefix: 'snake_p1',
         playerId: 1,  // Keep for sprite loading compatibility
@@ -25,7 +25,7 @@ const SNAKE_VARIANTS = {
     },
     orange: {
         id: 'orange',
-        displayName: 'Orange Snake',
+        displayName: 'Blaze',
         color: '#FF9800',
         spritePrefix: 'snake_p2',
         playerId: 2,  // Keep for sprite loading compatibility
@@ -1636,7 +1636,7 @@ function initGame() {
 
         // UI event listeners
         startBtn.addEventListener('click', () => {
-            // Default to green snake if no selection made
+            // Default to Jade if no selection made
             if (!game.selectedSnakeId) {
                 game.selectedSnakeId = 'green';
             }
@@ -1776,7 +1776,7 @@ function initGame() {
             // localStorage may be disabled or unavailable
         }
 
-        // Fallback to green snake if no selection set
+        // Fallback to Jade if no selection set
         if (!game.selectedSnakeId) {
             game.selectedSnakeId = 'green';
             game.titleSnakes.left.selected = true;
@@ -1821,7 +1821,7 @@ function drawTitleScreen() {
         const height = width / aspect;
         ctx.drawImage(leftSprite, snakeX - width/2, snakeY - height/2, width, height);
 
-        // Selection indicator for green snake
+        // Selection indicator for Jade
         if (game.titleSnakes.left.selected) {
             ctx.save();
             ctx.strokeStyle = '#4CAF50';
@@ -1868,7 +1868,7 @@ function drawTitleScreen() {
         ctx.drawImage(rightSprite, -width/2, -height/2, width, height);
         ctx.restore();
 
-        // Selection indicator for orange snake
+        // Selection indicator for Blaze
         if (game.titleSnakes.right.selected) {
             ctx.save();
             ctx.strokeStyle = '#FF9800';
@@ -1966,6 +1966,15 @@ function setupControls() {
             const startBtn = document.getElementById('startBtn');
             if (startBtn && !startBtn.disabled) {
                 startBtn.click();
+            }
+        }
+
+        // Arrow keys to select snake on title screen
+        if (game.screen === 'title' && !game.running) {
+            if (e.key === 'ArrowLeft') {
+                selectSnake('green');
+            } else if (e.key === 'ArrowRight') {
+                selectSnake('orange');
             }
         }
 

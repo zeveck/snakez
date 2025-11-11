@@ -4,11 +4,25 @@ All notable changes to Snake Style will be documented in this file.
 
 For the most up-to-date version history, see the "Version History" section in README.md.
 
+## [0.5.2] - 2025-11-11
+
+### Changed
+- Updated character names from "Green Snake" and "Orange Snake" to "Jade" and "Blaze"
+- Character names now display as "Jade" (green) and "Blaze" (orange) in the HUD
+
+## [0.5.1] - 2025-11-11
+
+### Added
+- Keyboard navigation for character selection on title screen
+  - Press Left Arrow to select Jade
+  - Press Right Arrow to select Blaze
+  - Provides quick keyboard-only navigation flow: arrow keys to select, Enter to start
+
 ## [0.5.0] - 2025-11-11
 
 ### Changed - Major Refactor to Single Player
 - Converted game from 2-player co-op to single-player with character selection
-- Title screen now allows selecting between green and orange snake before starting
+- Title screen now allows selecting between Jade and Blaze before starting
 - Removed all 2-player specific code, controls, and UI elements
 - Simplified codebase by removing dual-player state management
 
