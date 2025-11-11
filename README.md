@@ -1,8 +1,8 @@
 # Snake Style 🐍⚔️
 
-**Version 0.4.13** - A swamp-based 2-player cooperative beat 'em up arcade game
+**Version 0.5.0** - A swamp-based beat 'em up arcade game with character selection
 
-Fight alongside your friend as serpent warriors defending the swamp from endless waves of hostile frogs!
+Choose your serpent warrior and defend the swamp from endless waves of hostile frogs!
 
 <p align="center">
   <img src="graphics/logo_title.png" alt="Snake Style" width="600">
@@ -11,7 +11,7 @@ Fight alongside your friend as serpent warriors defending the swamp from endless
 ## 🎮 Game Features
 
 ### Core Gameplay
-- **2-Player Cooperative Action** - Team up locally to defeat waves of enemies
+- **Character Selection** - Choose between the green or orange snake warrior
 - **Wave-Based Combat** - Survive increasingly difficult frog invasions
 - **Combo System** - Chain attacks together for massive score multipliers
 - **Multiple Enemy Types** - Small, medium, and boss-sized frogs with unique behaviors
@@ -36,28 +36,23 @@ Each snake warrior has two powerful attacks:
 
 ## 🕹️ Controls
 
-### Player 1 (Green Snake)
+### Desktop
 - **Movement**: Arrow Keys `↑` `←` `↓` `→`
 - **Roll Attack**: `0` (zero key)
 - **Whip Attack**: `1` (one key)
 
-### Player 2 (Orange Snake)
-- **Movement**: `W` `A` `S` `D`
-- **Roll Attack**: `F`
-- **Whip Attack**: `G`
-
 ### Mobile Touch Controls
-- **Virtual Joysticks** - On-screen joysticks for movement
+- **Virtual Joystick** - On-screen joystick for movement
 - **Action Buttons** - Touch-friendly buttons for attacks
 
 ## 🎯 How to Play
 
-1. **Start the Game** - Click "Start" or press Enter on the title screen
-2. **Audio Controls** - Click the speaker icon (lower left) to toggle audio; right-click for volume controls
-3. **Survive the Waves** - Defeat all frogs to progress to the next wave
-4. **Build Combos** - Attack enemies in quick succession to multiply your score
-5. **Use the Environment** - Jump on lily pads to avoid the water and gain tactical advantage
-6. **Coordinate Attacks** - Work with your partner to overwhelm enemy groups
+1. **Select Your Snake** - Click on the green or orange snake on the title screen
+2. **Start the Game** - Click "Start" or press Enter
+3. **Audio Controls** - Click the speaker icon (lower left) to toggle audio; right-click for volume controls
+4. **Survive the Waves** - Defeat all frogs to progress to the next wave
+5. **Build Combos** - Attack enemies in quick succession to multiply your score
+6. **Use the Environment** - Jump on lily pads to avoid the water and gain tactical advantage
 7. **Watch Your Health** - Avoid frog attacks and use invulnerability frames wisely
 
 ## 🏆 Scoring System
@@ -81,10 +76,10 @@ Each snake warrior has two powerful attacks:
 - **Boss Behavior**: Large frogs are tankier but slower
 
 ### Health System
-- Players start with 100 HP
+- Player starts with 100 HP
 - Invulnerability frames after taking damage
-- Visual health bars show current HP for each player
-- Game over when both players are defeated
+- Visual health bar shows current HP
+- Game over when player is defeated
 
 ## 🚀 Running the Game
 

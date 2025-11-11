@@ -12,6 +12,28 @@ const CONFIG = {
     COMBO_TIMEOUT: 2000,
 };
 
+// Snake character variants
+const SNAKE_VARIANTS = {
+    green: {
+        id: 'green',
+        displayName: 'Green Snake',
+        color: '#4CAF50',
+        spritePrefix: 'snake_p1',
+        playerId: 1,  // Keep for sprite loading compatibility
+        hudBorderColor: '#4CAF50',
+        size: 66  // Title screen display size
+    },
+    orange: {
+        id: 'orange',
+        displayName: 'Orange Snake',
+        color: '#FF9800',
+        spritePrefix: 'snake_p2',
+        playerId: 2,  // Keep for sprite loading compatibility
+        hudBorderColor: '#FF9800',
+        size: 98  // Title screen display size
+    }
+};
+
 // Asset Manager
 const assets = {
     images: {},
@@ -25,14 +47,14 @@ const assets = {
         'background_swamp': 'graphics/swamp-background-day.jpg',
         'title_background': 'graphics/title-background_swamp.jpg',
 
-        // Player 1 (Green Snake)
+        // Green Snake
         'snake_p1_idle': 'graphics/snake_p1_idle.png',
         'snake_p1_extended': 'graphics/snake_p1_extended.png',
         'snake_p1_jumping': 'graphics/snake_p1_jumping.png',
         'snake_p1_rolling': 'graphics/snake_p1_rolling.png',
         'snake_p1_swimming': 'graphics/snake_p1_swimming.png',
 
-        // Player 2 (Orange Snake)
+        // Orange Snake
         'snake_p2_idle': 'graphics/snake_p2_idle.png',
         'snake_p2_extended': 'graphics/snake_p2_extended.png',
         'snake_p2_jumping': 'graphics/snake_p2_jumping.png',
@@ -384,7 +406,7 @@ const game = {
     running: false,
     wave: 1,
     score: 0,
-    players: [],
+    player: null,
     enemies: [],
     lilyPads: [],
     particles: [],
@@ -392,17 +414,21 @@ const game = {
     touches: {},
     lastTime: 0,
     screen: 'title',
-    defeatedFrogs: [], // Track all defeated frogs for game over parade
-    titleSnakes: { left: { y: 0, vy: 0, jumping: false }, right: { y: 0, vy: 0, jumping: false } },
-    singlePlayer: false,
-    activePlayer: null, // 0 for P1, 1 for P2 in single player
+    defeatedFrogs: [],
+    titleSnakes: {
+        left: { y: 0, vy: 0, jumping: false, selected: true },
+        right: { y: 0, vy: 0, jumping: false, selected: false }
+    },
+    selectedSnakeId: 'green',
     isMobile: false,
 };
 
 // Input handlers
 const input = {
-    player1: { x: 0, y: 0, roll: false, whip: false },
-    player2: { x: 0, y: 0, roll: false, whip: false },
+    x: 0,
+    y: 0,
+    roll: false,
+    whip: false
 };
 
 // Entity Classes
@@ -490,15 +516,16 @@ class Entity {
 }
 
 class Snake extends Entity {
-    constructor(x, y, playerId, color) {
+    constructor(x, y, variant) {
         super(x, y, 50, 40);
-        this.playerId = playerId;
-        this.color = color;
+        this.variant = variant;
+        this.playerId = variant.playerId;  // Needed for sprite loading (snake_p1 vs snake_p2)
+        this.color = variant.color;
         this.health = 100;
         this.maxHealth = 100;
         this.dead = false;
-        this.state = 'idle'; // idle, rolling, extended, grabbing
-        this.facing = 1; // 1 = right, -1 = left
+        this.state = 'idle';
+        this.facing = 1;
         this.combo = 0;
         this.comboTimer = 0;
         this.rollTimer = 0;
@@ -507,7 +534,8 @@ class Snake extends Entity {
         this.whipCooldown = 0;
         this.invulnerable = 0;
         this.segments = [];
-        this.droppingThrough = false; // Flag for dropping through lily pads
+        this.droppingThrough = false;
+        this.groundedFrames = 0;
         this.initSegments();
     }
 
@@ -546,7 +574,7 @@ class Snake extends Entity {
         }
 
         // Get input
-        const playerInput = this.playerId === 1 ? input.player1 : input.player2;
+        const playerInput = input;
 
         // Handle states
         if (this.state === 'rolling') {
@@ -694,20 +722,8 @@ class Snake extends Entity {
 
     die() {
         this.dead = true;
-        // Create death particle explosion
         createPlayerDeathEffect(this.x + this.width / 2, this.y + this.height / 2);
-
-        // Check game over
-        if (game.singlePlayer) {
-            // In single player, death = immediate game over
-            gameOver();
-        } else {
-            // In 2-player mode, check if both players are dead
-            const alivePlayers = game.players.filter(p => !p.dead);
-            if (alivePlayers.length === 0) {
-                gameOver();
-            }
-        }
+        gameOver();
     }
 
     updateSegments() {
@@ -730,7 +746,7 @@ class Snake extends Entity {
         }
 
         // Determine which sprite to use
-        const playerPrefix = this.playerId === 1 ? 'snake_p1' : 'snake_p2';
+        const playerPrefix = this.variant.spritePrefix;
         let spriteName = `${playerPrefix}_idle`;
 
         if (this.state === 'rolling') {
@@ -905,21 +921,11 @@ class Frog extends Entity {
     }
 
     findNearestPlayer() {
-        let nearest = null;
-        let minDist = Infinity;
-
-        for (const player of game.players) {
-            if (player.health <= 0 || player.dead) continue;
-            const dx = player.x - this.x;
-            const dy = player.y - this.y;
-            const dist = Math.sqrt(dx * dx + dy * dy);
-            if (dist < minDist) {
-                minDist = dist;
-                nearest = player;
-            }
+        // Return the player if alive, otherwise null
+        if (!game.player || game.player.dead || game.player.health <= 0) {
+            return null;
         }
-
-        return nearest;
+        return game.player;
     }
 
     jumpTowards(target) {
@@ -1523,36 +1529,6 @@ function detectMobile() {
     }
 }
 
-function updateMobileControlsVisibility() {
-    if (!game.isMobile) {
-        return; // Desktop always shows both controls
-    }
-
-    // Hide P2 controls on mobile
-    const joystick2 = document.getElementById('joystick2');
-    const actions2 = document.getElementById('actions2');
-
-    if (joystick2) {
-        joystick2.style.display = 'none';
-    }
-    if (actions2) {
-        actions2.style.display = 'none';
-    }
-}
-
-function updateDesktopControlsVisibility() {
-    const p2Controls = document.getElementById('p2Controls');
-
-    if (!p2Controls) return;
-
-    // Hide P2 controls in single player mode
-    if (game.singlePlayer) {
-        p2Controls.style.display = 'none';
-    } else {
-        p2Controls.style.display = 'block';
-    }
-}
-
 // Game functions
 function initGame() {
     game.canvas = document.getElementById('gameCanvas');
@@ -1649,12 +1625,6 @@ function initGame() {
         // Initialize audio manager
         audioManager.init();
 
-        // Create players
-        game.players = [
-            new Snake(100, 300, 1, '#4CAF50'),
-            new Snake(200, 300, 2, '#FF9800')
-        ];
-
         // Create initial lily pads
         createLilyPads();
 
@@ -1665,7 +1635,13 @@ function initGame() {
         detectMobile();
 
         // UI event listeners
-        startBtn.addEventListener('click', () => startGame(false, null)); // Two-player co-op
+        startBtn.addEventListener('click', () => {
+            // Default to green snake if no selection made
+            if (!game.selectedSnakeId) {
+                game.selectedSnakeId = 'green';
+            }
+            startGame();
+        });
 
         // How to Play toggle functionality
         const closeInstructionsBtn = document.getElementById('closeInstructions');
@@ -1739,16 +1715,14 @@ function initGame() {
             // Check if clicked on left snake
             if (canvasX >= leftHitbox.x && canvasX <= leftHitbox.x + leftHitbox.width &&
                 canvasY >= leftHitbox.y && canvasY <= leftHitbox.y + leftHitbox.height) {
-                // Start single player as P1
-                startGame(true, 0);
+                selectSnake('green');
                 return;
             }
 
             // Check if clicked on right snake
             if (canvasX >= rightHitbox.x && canvasX <= rightHitbox.x + rightHitbox.width &&
                 canvasY >= rightHitbox.y && canvasY <= rightHitbox.y + rightHitbox.height) {
-                // Start single player as P2
-                startGame(true, 1);
+                selectSnake('orange');
                 return;
             }
 
@@ -1790,6 +1764,25 @@ function initGame() {
         };
         titleScreen.addEventListener('mousemove', handleTitleHover);
 
+        // Restore saved selection from localStorage if available
+        try {
+            const savedSelection = localStorage.getItem('snakeStyleSelectedSnake');
+            if (savedSelection === 'green' || savedSelection === 'orange') {
+                game.selectedSnakeId = savedSelection;
+                game.titleSnakes.left.selected = (savedSelection === 'green');
+                game.titleSnakes.right.selected = (savedSelection === 'orange');
+            }
+        } catch (e) {
+            // localStorage may be disabled or unavailable
+        }
+
+        // Fallback to green snake if no selection set
+        if (!game.selectedSnakeId) {
+            game.selectedSnakeId = 'green';
+            game.titleSnakes.left.selected = true;
+            game.titleSnakes.right.selected = false;
+        }
+
         // Draw title screen with graphics
         drawTitleScreen();
     });
@@ -1820,13 +1813,30 @@ function drawTitleScreen() {
     const leftSprite = game.titleSnakes.left.jumping ?
         assets.get('snake_p1_jumping') : assets.get('snake_p1_idle');
     if (leftSprite && leftSprite.complete) {
-        const snakeSize = 66; // Smaller size for green snake
+        const snakeSize = 66;
         const snakeX = 270;
         const snakeY = 195 + game.titleSnakes.left.y;
         const aspect = leftSprite.width / leftSprite.height;
         const width = snakeSize;
         const height = width / aspect;
         ctx.drawImage(leftSprite, snakeX - width/2, snakeY - height/2, width, height);
+
+        // Selection indicator for green snake
+        if (game.titleSnakes.left.selected) {
+            ctx.save();
+            ctx.strokeStyle = '#4CAF50';
+            ctx.shadowColor = '#4CAF50';
+            ctx.shadowBlur = 15;
+            ctx.lineWidth = 4;
+            ctx.strokeRect(snakeX - width/2 - 5, snakeY - height/2 - 5, width + 10, height + 10);
+            ctx.shadowBlur = 0;
+
+            ctx.fillStyle = '#FFD700';
+            ctx.font = 'bold 16px "Courier New"';
+            ctx.textAlign = 'center';
+            ctx.fillText('▼ SELECTED ▼', snakeX, snakeY - height/2 - 15);
+            ctx.restore();
+        }
     }
 
     // Draw logo in center
@@ -1857,6 +1867,23 @@ function drawTitleScreen() {
         ctx.scale(-1, 1);
         ctx.drawImage(rightSprite, -width/2, -height/2, width, height);
         ctx.restore();
+
+        // Selection indicator for orange snake
+        if (game.titleSnakes.right.selected) {
+            ctx.save();
+            ctx.strokeStyle = '#FF9800';
+            ctx.shadowColor = '#FF9800';
+            ctx.shadowBlur = 15;
+            ctx.lineWidth = 4;
+            ctx.strokeRect(snakeX - width/2 - 5, snakeY - height/2 - 5, width + 10, height + 10);
+            ctx.shadowBlur = 0;
+
+            ctx.fillStyle = '#FFD700';
+            ctx.font = 'bold 16px "Courier New"';
+            ctx.textAlign = 'center';
+            ctx.fillText('▼ SELECTED ▼', snakeX, snakeY - height/2 - 15);
+            ctx.restore();
+        }
     }
 }
 
@@ -1943,52 +1970,21 @@ function setupControls() {
         }
 
         // Playtesting shortcut: Delete key to instantly die
-        if (e.key === 'Delete' && game.running) {
-            game.players.forEach(player => {
-                if (!player.dead) {
-                    player.health = 0;
-                    player.die();
-                }
-            });
+        if (e.key === 'Delete' && game.running && game.player && !game.player.dead) {
+            game.player.health = 0;
+            game.player.die();
         }
 
-        // Single player controls (Arrow keys + 0/1)
-        if (game.singlePlayer) {
-            const activeInput = game.activePlayer === 0 ? input.player1 : input.player2;
-            if (e.key === '0' || e.code === 'Digit0' || e.code === 'Numpad0') activeInput.roll = true;
-            if (e.key === '1' || e.code === 'Digit1') activeInput.whip = true;
-        }
-
-        // Player 1 controls (Arrows + 0/1) - two player mode
-        if (!game.singlePlayer) {
-            if (e.key === '0' || e.code === 'Digit0' || e.code === 'Numpad0') input.player1.roll = true;
-            if (e.key === '1' || e.code === 'Digit1') input.player1.whip = true;
-        }
-
-        // Player 2 controls (WASD + F/G) - two player mode
-        if (!game.singlePlayer) {
-            if (e.key.toLowerCase() === 'f') input.player2.roll = true;
-            if (e.key.toLowerCase() === 'g') input.player2.whip = true;
-        }
+        // Action buttons (0 = roll, 1 = whip)
+        if (e.key === '0' || e.code === 'Digit0' || e.code === 'Numpad0') input.roll = true;
+        if (e.key === '1' || e.code === 'Digit1') input.whip = true;
     });
 
     window.addEventListener('keyup', (e) => {
         game.keys[e.key.toLowerCase()] = false;
 
-        // Single player controls
-        if (game.singlePlayer) {
-            const activeInput = game.activePlayer === 0 ? input.player1 : input.player2;
-            if (e.key === '0' || e.code === 'Digit0' || e.code === 'Numpad0') activeInput.roll = false;
-            if (e.key === '1' || e.code === 'Digit1') activeInput.whip = false;
-        }
-
-        // Two player controls
-        if (!game.singlePlayer) {
-            if (e.key === '0' || e.code === 'Digit0' || e.code === 'Numpad0') input.player1.roll = false;
-            if (e.key === '1' || e.code === 'Digit1') input.player1.whip = false;
-            if (e.key.toLowerCase() === 'f') input.player2.roll = false;
-            if (e.key.toLowerCase() === 'g') input.player2.whip = false;
-        }
+        if (e.key === '0' || e.code === 'Digit0' || e.code === 'Numpad0') input.roll = false;
+        if (e.key === '1' || e.code === 'Digit1') input.whip = false;
     });
 
     // Mobile touch controls - only register on mobile/touch devices
@@ -2000,116 +1996,98 @@ function setupControls() {
 }
 
 function setupMobileControls() {
-    const joysticks = document.querySelectorAll('.joystick-base');
-    const actionBtns = document.querySelectorAll('.action-btn');
+    const joystick = document.querySelector('#joystick1 .joystick-base');
+    const stick = joystick.querySelector('.joystick-stick');
+    let touchId = null;
 
-    // Joystick controls
-    joysticks.forEach((joystick, index) => {
-        const playerId = index + 1;
-        const stick = joystick.querySelector('.joystick-stick');
-        let touchId = null;
+    joystick.addEventListener('touchstart', (e) => {
+        e.preventDefault();
+        touchId = e.changedTouches[0].identifier;
+        handleJoystickMove(e.changedTouches[0], joystick, stick);
+    }, { passive: false });
 
-        joystick.addEventListener('touchstart', (e) => {
-            touchId = e.changedTouches[0].identifier;
-            handleJoystickMove(e.changedTouches[0], joystick, stick, playerId);
-        }, { passive: true });
-
-        joystick.addEventListener('touchmove', (e) => {
-            for (let touch of e.changedTouches) {
-                if (touch.identifier === touchId) {
-                    handleJoystickMove(touch, joystick, stick, playerId);
-                }
+    joystick.addEventListener('touchmove', (e) => {
+        e.preventDefault();
+        for (let touch of e.changedTouches) {
+            if (touch.identifier === touchId) {
+                handleJoystickMove(touch, joystick, stick);
             }
-        }, { passive: true });
+        }
+    }, { passive: false });
 
-        joystick.addEventListener('touchend', (e) => {
-            stick.style.transform = 'translate(-50%, -50%)';
-            const playerInput = playerId === 1 ? input.player1 : input.player2;
-            playerInput.x = 0;
-            playerInput.y = 0;
-            touchId = null;
-        }, { passive: true });
-    });
+    joystick.addEventListener('touchend', () => {
+        stick.style.transform = 'translate(-50%, -50%)';
+        input.x = 0;
+        input.y = 0;
+        touchId = null;
+    }, { passive: true });
 
     // Action buttons
-    actionBtns.forEach(btn => {
-        const playerId = parseInt(btn.dataset.player);
-        const playerInput = playerId === 1 ? input.player1 : input.player2;
-
+    const actionButtons = document.querySelectorAll('#actions1 .action-btn');
+    actionButtons.forEach(btn => {
         btn.addEventListener('touchstart', (e) => {
-            if (btn.classList.contains('roll-btn')) {
-                playerInput.roll = true;
-            } else if (btn.classList.contains('whip-btn')) {
-                playerInput.whip = true;
-            }
-        }, { passive: true });
+            e.preventDefault();
+            if (btn.classList.contains('roll-btn')) input.roll = true;
+            if (btn.classList.contains('whip-btn')) input.whip = true;
+        }, { passive: false });
 
-        btn.addEventListener('touchend', (e) => {
-            if (btn.classList.contains('roll-btn')) {
-                playerInput.roll = false;
-            } else if (btn.classList.contains('whip-btn')) {
-                playerInput.whip = false;
-            }
+        btn.addEventListener('touchend', () => {
+            input.roll = false;
+            input.whip = false;
         }, { passive: true });
     });
 }
 
-function handleJoystickMove(touch, joystick, stick, playerId) {
+function handleJoystickMove(touch, joystick, stick) {
     const rect = joystick.getBoundingClientRect();
     const centerX = rect.left + rect.width / 2;
     const centerY = rect.top + rect.height / 2;
     const dx = touch.clientX - centerX;
     const dy = touch.clientY - centerY;
-    const distance = Math.min(Math.sqrt(dx * dx + dy * dy), rect.width / 2 - 10);
+    const distance = Math.min(Math.sqrt(dx * dx + dy * dy), 40);
     const angle = Math.atan2(dy, dx);
 
-    const stickX = Math.cos(angle) * distance;
-    const stickY = Math.sin(angle) * distance;
+    stick.style.transform = `translate(-50%, -50%) translate(${Math.cos(angle) * distance}px, ${Math.sin(angle) * distance}px)`;
 
-    stick.style.transform = `translate(calc(-50% + ${stickX}px), calc(-50% + ${stickY}px))`;
-
-    const playerInput = playerId === 1 ? input.player1 : input.player2;
     const deadzone = 10;
-    playerInput.x = Math.abs(dx) > deadzone ? Math.max(-1, Math.min(1, dx / 30)) : 0;
-    playerInput.y = Math.abs(dy) > deadzone ? Math.max(-1, Math.min(1, dy / 30)) : 0;
+    input.x = Math.abs(dx) > deadzone ? Math.max(-1, Math.min(1, dx / 30)) : 0;
+    input.y = Math.abs(dy) > deadzone ? Math.max(-1, Math.min(1, dy / 30)) : 0;
 }
 
 function updateKeyboardInput() {
-    if (game.singlePlayer) {
-        // Single player mode - always use Arrow keys regardless of which snake
-        const activeInput = game.activePlayer === 0 ? input.player1 : input.player2;
-        activeInput.x = 0;
-        activeInput.y = 0;
-        if (game.keys['arrowleft']) activeInput.x = -1;
-        if (game.keys['arrowright']) activeInput.x = 1;
-        if (game.keys['arrowup']) activeInput.y = -1;
-        if (game.keys['arrowdown']) activeInput.y = 1;
+    input.x = 0;
+    input.y = 0;
+    if (game.keys['arrowleft']) input.x = -1;
+    if (game.keys['arrowright']) input.x = 1;
+    if (game.keys['arrowup']) input.y = -1;
+    if (game.keys['arrowdown']) input.y = 1;
+}
 
-        // Reset inactive player input
-        const inactiveInput = game.activePlayer === 0 ? input.player2 : input.player1;
-        inactiveInput.x = 0;
-        inactiveInput.y = 0;
+function selectSnake(snakeId) {
+    game.selectedSnakeId = snakeId;
+    game.titleSnakes.left.selected = (snakeId === 'green');
+    game.titleSnakes.right.selected = (snakeId === 'orange');
+
+    // Persist selection to localStorage (optional feature)
+    try {
+        localStorage.setItem('snakeStyleSelectedSnake', snakeId);
+    } catch (e) {
+        // Ignore localStorage errors (e.g., disabled, quota exceeded)
+    }
+
+    drawTitleScreen();
+
+    // Visual feedback: make the selected snake jump
+    if (snakeId === 'green') {
+        game.titleSnakes.left.vy = -12;
+        game.titleSnakes.left.jumping = true;
     } else {
-        // Two player mode - separate controls
-        // Player 1 (Arrows)
-        input.player1.x = 0;
-        input.player1.y = 0;
-        if (game.keys['arrowleft']) input.player1.x = -1;
-        if (game.keys['arrowright']) input.player1.x = 1;
-        if (game.keys['arrowup']) input.player1.y = -1;
-        if (game.keys['arrowdown']) input.player1.y = 1;
-
-        // Player 2 (WASD)
-        input.player2.x = 0;
-        input.player2.y = 0;
-        if (game.keys['a']) input.player2.x = -1;
-        if (game.keys['d']) input.player2.x = 1;
-        if (game.keys['w']) input.player2.y = -1;
-        if (game.keys['s']) input.player2.y = 1;
+        game.titleSnakes.right.vy = -12;
+        game.titleSnakes.right.jumping = true;
     }
 }
 
-function startGame(singlePlayer = false, activePlayer = null) {
+function startGame() {
     setScreen('game');
     audioManager.hasInteracted = true;
     audioManager.playBackground();
@@ -2118,51 +2096,32 @@ function startGame(singlePlayer = false, activePlayer = null) {
     game.score = 0;
     game.enemies = [];
     game.particles = [];
-    game.defeatedFrogs = []; // Reset defeated frogs tracking
+    game.defeatedFrogs = [];
 
-    // Set single player mode
-    if (game.isMobile) {
-        // Force single player on mobile
-        game.singlePlayer = true;
-        game.activePlayer = 0; // Always P1 on mobile
-    } else {
-        game.singlePlayer = singlePlayer;
-        game.activePlayer = activePlayer;
-    }
+    // Use selected variant, defaulting to green if somehow not set
+    const variantId = game.selectedSnakeId || 'green';
+    const variant = SNAKE_VARIANTS[variantId];
 
-    // Update mobile controls visibility
-    updateMobileControlsVisibility();
+    game.player = new Snake(100, 300, variant);
 
-    // Update desktop controls visibility
-    updateDesktopControlsVisibility();
-
-    // Reset players
-    game.players.forEach((player, i) => {
-        // In single player mode, only initialize the active player
-        if (game.singlePlayer && i !== game.activePlayer) {
-            player.health = 0;
-            player.dead = true;
-            return;
-        }
-
-        player.health = 100;
-        player.dead = false;
-        player.x = 100 + i * 100;
-        player.y = 300;
-        player.vx = 0;
-        player.vy = 0;
-        player.combo = 0;
-        player.comboTimer = 0;
-        player.state = 'idle';
-        player.rollTimer = 0;
-        player.rollCooldown = 0;
-        player.whipTimer = 0;
-        player.whipCooldown = 0;
-        player.invulnerable = 0;
-        player.onGround = false;
-        player.width = 50;
-        player.height = 40;
-    });
+    // Initialize player to starting state
+    game.player.health = 100;
+    game.player.dead = false;
+    game.player.x = 100;
+    game.player.y = 300;
+    game.player.vx = 0;
+    game.player.vy = 0;
+    game.player.combo = 0;
+    game.player.comboTimer = 0;
+    game.player.state = 'idle';
+    game.player.rollTimer = 0;
+    game.player.rollCooldown = 0;
+    game.player.whipTimer = 0;
+    game.player.whipCooldown = 0;
+    game.player.invulnerable = 0;
+    game.player.onGround = false;
+    game.player.width = 50;
+    game.player.height = 40;
 
     spawnWave();
     gameLoop();
@@ -2184,18 +2143,20 @@ function restartGame() {
 }
 
 function returnToTitle() {
-    // Stop frog parade
     if (frogParade) {
         frogParade.stop();
     }
+    game.running = false;
+    audioManager.stopAll();
 
-    // If coming from shared URL, reload page to get full initialization
-    if (game.isSharedResult) {
-        window.location.href = window.location.origin + window.location.pathname;
-        return;
-    }
+    // Selection persists across game sessions
+    // Optionally reset to default by uncommenting:
+    // game.selectedSnakeId = 'green';
+    // game.titleSnakes.left.selected = true;
+    // game.titleSnakes.right.selected = false;
 
     setScreen('title');
+    drawTitleScreen();
     audioManager.playTitle();
 }
 
@@ -2240,10 +2201,10 @@ function gameLoop(timestamp = 0) {
 function update() {
     updateKeyboardInput();
 
-    // Update players
-    game.players.forEach(player => player.update());
+    if (game.player && !game.player.dead) {
+        game.player.update();
+    }
 
-    // Update enemies
     game.enemies.forEach(enemy => enemy.update());
 
     // Remove dead enemies
@@ -2308,10 +2269,10 @@ function render() {
     // Draw lily pads
     game.lilyPads.forEach(pad => pad.draw(ctx));
 
-    // Draw players
-    game.players.forEach(player => player.draw(ctx));
+    if (game.player) {
+        game.player.draw(ctx);
+    }
 
-    // Draw enemies
     game.enemies.forEach(enemy => enemy.draw(ctx));
 
     // Draw particles
@@ -2319,38 +2280,31 @@ function render() {
 }
 
 function updateHUD() {
-    // Health bars
-    document.getElementById('p1-health').style.width = game.players[0].health + '%';
-    document.getElementById('p2-health').style.width = game.players[1].health + '%';
+    if (!game.player) return;
 
-    // Combos
-    document.getElementById('p1-combo').textContent = game.players[0].combo;
-    document.getElementById('p2-combo').textContent = game.players[1].combo;
+    const healthBar = document.getElementById('player-health');
+    if (healthBar) {
+        healthBar.style.width = game.player.health + '%';
+    }
 
-    // Wave info
-    document.getElementById('waveNumber').textContent = `Wave ${game.wave}`;
-    document.getElementById('enemyCount').textContent = `Frogs: ${game.enemies.length}`;
+    const comboDisplay = document.getElementById('player-combo');
+    if (comboDisplay) {
+        comboDisplay.textContent = game.player.combo;
+    }
 
-    // Hide HUD for inactive players in single player mode
-    if (game.singlePlayer) {
-        const p1Hud = document.querySelector('.player-hud.p1');
-        const p2Hud = document.querySelector('.player-hud.p2');
+    const playerName = document.getElementById('player-name');
+    if (playerName && game.player.variant) {
+        playerName.textContent = game.player.variant.displayName;
+    }
 
-        if (game.activePlayer === 0) {
-            // P1 active, hide P2 HUD
-            if (p1Hud) p1Hud.style.display = '';
-            if (p2Hud) p2Hud.style.display = 'none';
-        } else if (game.activePlayer === 1) {
-            // P2 active, hide P1 HUD
-            if (p1Hud) p1Hud.style.display = 'none';
-            if (p2Hud) p2Hud.style.display = '';
-        }
-    } else {
-        // Show both HUDs in 2-player mode
-        const p1Hud = document.querySelector('.player-hud.p1');
-        const p2Hud = document.querySelector('.player-hud.p2');
-        if (p1Hud) p1Hud.style.display = '';
-        if (p2Hud) p2Hud.style.display = '';
+    const waveNumber = document.getElementById('waveNumber');
+    if (waveNumber) {
+        waveNumber.textContent = `Wave ${game.wave}`;
+    }
+
+    const enemyCount = document.getElementById('enemyCount');
+    if (enemyCount) {
+        enemyCount.textContent = `Frogs: ${game.enemies.length}`;
     }
 }
 

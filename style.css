@@ -205,14 +205,6 @@ body {
     min-width: 150px;
 }
 
-.player-hud.p1 {
-    border-color: #4CAF50;
-}
-
-.player-hud.p2 {
-    border-color: #FF9800;
-}
-
 .player-name {
     font-size: clamp(0.9rem, 2.5vw, 1.2rem);
     font-weight: bold;
@@ -310,16 +302,6 @@ body {
     border-radius: 4px;
 }
 
-.p1-label {
-    background: #4CAF50;
-    color: #fff;
-}
-
-.p2-label {
-    background: #FF9800;
-    color: #fff;
-}
-
 .keys {
     background: rgba(255, 255, 255, 0.2);
     padding: 4px 8px;
@@ -336,17 +318,23 @@ body {
     right: 0;
     height: 220px;
     display: none;
-    grid-template-columns: 1fr 1fr;
-    grid-template-rows: auto auto;
-    gap: 10px;
-    padding: 10px;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    padding: 0 20px;
+    gap: 20px;
     background: linear-gradient(to top, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0.4) 100%);
     pointer-events: all;
 }
 
+#mobileControls.active {
+    display: flex;
+}
+
 @media (max-width: 768px), (pointer: coarse) {
     #mobileControls {
-        display: grid;
+        display: flex;
     }
 }
 

@@ -4,6 +4,37 @@ All notable changes to Snake Style will be documented in this file.
 
 For the most up-to-date version history, see the "Version History" section in README.md.
 
+## [0.5.0] - 2025-11-11
+
+### Changed - Major Refactor to Single Player
+- Converted game from 2-player co-op to single-player with character selection
+- Title screen now allows selecting between green and orange snake before starting
+- Removed all 2-player specific code, controls, and UI elements
+- Simplified codebase by removing dual-player state management
+
+### Added
+- Character selection system with visual indicators on title screen
+- Snake variant configuration system for data-driven character properties
+- Selection persistence via localStorage
+- Selected snake name displayed in HUD
+
+### Removed
+- 2-player cooperative mode
+- Player 2 controls (WASD, F, G keys)
+- Player 2 mobile joystick and action buttons
+- Player 2 HUD elements
+- `singlePlayer` and `activePlayer` state flags
+- Dual input system (`input.player1` and `input.player2`)
+- Mobile and desktop control visibility toggle functions
+
+### Updated
+- Meta tags and SEO content to reflect single-player gameplay
+- README.md with single-player instructions and character selection info
+- All documentation references from "2-player" to "single-player"
+- Game loop to handle single player object instead of players array
+- Enemy AI to target single player directly
+- Input system consolidated to single input object
+
 ## [0.4.0] - 2025-11-02
 ## [0.4.1] - 2025-11-02
 
