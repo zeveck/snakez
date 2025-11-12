@@ -1934,9 +1934,12 @@ function resizeCanvas() {
 function createLilyPads() {
     game.lilyPads = [];
     for (let i = 0; i < 8; i++) {
-        const x = 100 + i * 140 + Math.random() * 40;
+        const width = 80 + Math.random() * 30;
+        let x = 100 + i * 140 + Math.random() * 40;
+        // Ensure lily pad stays fully on screen
+        x = Math.min(x, CONFIG.CANVAS_WIDTH - width);
         const y = CONFIG.WATER_LEVEL - 20 + Math.random() * 30;
-        game.lilyPads.push(new LilyPad(x, y, 80 + Math.random() * 30));
+        game.lilyPads.push(new LilyPad(x, y, width));
     }
 }
 
@@ -2089,17 +2092,25 @@ function startGame() {
     game.particles = [];
     game.defeatedFrogs = [];
 
+    // Generate fresh lily pads for this game
+    createLilyPads();
+
     // Use selected variant, defaulting to green if somehow not set
     const variantId = game.selectedSnakeId || 'green';
     const variant = SNAKE_VARIANTS[variantId];
 
-    game.player = new Snake(100, 300, variant);
+    // Calculate starting position on leftmost lily pad (start a bit higher for fall-in effect)
+    const firstPad = game.lilyPads[0];
+    const startX = firstPad.x + firstPad.width / 2 - 25; // 25 = player.width / 2
+    const startY = firstPad.y - 300; // Start higher to fall onto lily pad
+
+    game.player = new Snake(startX, startY, variant);
 
     // Initialize player to starting state
     game.player.health = 100;
     game.player.dead = false;
-    game.player.x = 100;
-    game.player.y = 300;
+    game.player.x = startX;
+    game.player.y = startY;
     game.player.vx = 0;
     game.player.vy = 0;
     game.player.combo = 0;

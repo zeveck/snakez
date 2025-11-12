@@ -4,6 +4,17 @@ All notable changes to Snake Style will be documented in this file.
 
 For the most up-to-date version history, see the "Version History" section in README.md.
 
+## [0.5.6] - 2025-11-12
+
+### Added
+- Lily pads now regenerate with fresh random positions at the start of each game
+- Player now starts centered on the leftmost lily pad for consistent gameplay
+
+### Changed
+- Player starts higher up (dramatic fall-in entrance to each game)
+- Lily pad generation now ensures all pads stay fully within canvas bounds
+- Each game session now has unique lily pad layout instead of static positions
+
 ## [0.5.5] - 2025-11-12
 
 ### Fixed
