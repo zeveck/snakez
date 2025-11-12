@@ -1615,6 +1615,9 @@ function initGame() {
             }
         });
 
+        // Setup controls (needed for Enter key on share screen)
+        setupControls();
+
         // Check for shared Game Over URL
         const urlData = parseGameOverURL();
         if (urlData) {
@@ -1630,9 +1633,6 @@ function initGame() {
 
         // Create initial lily pads
         createLilyPads();
-
-        // Setup controls
-        setupControls();
 
         // Detect mobile device
         detectMobile();
@@ -1945,10 +1945,15 @@ function setupControls() {
     window.addEventListener('keydown', (e) => {
         game.keys[e.key.toLowerCase()] = true;
 
-        // Start game with Enter on title screen
+        // Start game with Enter on title screen or game over screen
         if (e.key === 'Enter' && !game.running) {
+            const restartBtn = document.getElementById('restartBtn');
             const startBtn = document.getElementById('startBtn');
-            if (startBtn && !startBtn.disabled) {
+
+            // Check which button is visible and click it
+            if (restartBtn && restartBtn.offsetParent !== null) {
+                restartBtn.click();
+            } else if (startBtn && !startBtn.disabled) {
                 startBtn.click();
             }
         }
@@ -2119,13 +2124,10 @@ function restartGame() {
         frogParade.stop();
     }
 
-    // If coming from shared URL, we need to start fresh but remember the snake
+    // If coming from shared URL, reload page without hash for fresh start
     if (game.isSharedResult) {
-        // Remember the snake before clearing shared result flag
-        const snakeId = game.selectedSnakeId || 'green';
-        game.isSharedResult = false;
-        game.selectedSnakeId = snakeId;
-        // Fall through to regular startGame()
+        window.location.href = window.location.pathname;
+        return;
     } else if (game.player && game.player.variant) {
         // Remember which snake we were playing as for Play Again
         game.selectedSnakeId = game.player.variant.id;

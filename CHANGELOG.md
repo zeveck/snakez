@@ -4,6 +4,18 @@ All notable changes to Snake Style will be documented in this file.
 
 For the most up-to-date version history, see the "Version History" section in README.md.
 
+## [0.5.5] - 2025-11-12
+
+### Fixed
+- Enter key now works on share screen to activate the "Play" button
+- Share screen now properly reloads the page when clicking "Play", ensuring full initialization
+- Keyboard controls are now registered even when loading from a share URL
+- Fixed missing lily pads when starting game from share screen
+
+### Changed
+- Moved control setup earlier in initialization to support keyboard interaction on share screen
+- Share screen "Play" button now triggers a clean page reload instead of attempting partial restart
+
 ## [0.5.4] - 2025-11-11
 
 ### Added

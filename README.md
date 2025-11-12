@@ -1,6 +1,6 @@
 # Snake Style 🐍⚔️
 
-**Version 0.5.4** - A swamp-based beat 'em up arcade game with character selection
+**Version 0.5.5** - A swamp-based beat 'em up arcade game with character selection
 
 Choose your serpent warrior and defend the swamp from endless waves of hostile frogs!
 
