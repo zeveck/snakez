@@ -4,9 +4,16 @@ All notable changes to Snake Style will be documented in this file.
 
 For the most up-to-date version history, see the "Version History" section in README.md.
 
+## [0.5.8] - 2025-11-12
+
+### Changed
+- Pause overlay is now less opaque (50% instead of 85%) for better visibility of paused game
+
 ## [0.5.7] - 2025-11-12
 
 ### Added
+- Pause functionality: Press P on keyboard or tap pause button (⏸) on mobile to pause/resume
+- Pause overlay shows "PAUSED" with resume instructions
 - Interactive snake portrait on Game Over/share screen responds to keyboard commands
 - Press 0 to make snake roll (with spinning animation)
 - Press 1 to make snake whip
@@ -15,7 +22,9 @@ For the most up-to-date version history, see the "Version History" section in RE
 
 ### Changed
 - Roll animation now actually rotates the portrait for visual spinning effect (600ms duration)
-- Jump animation now actually moves the portrait up and down with bounce effect (400ms duration)
+- Jump animation now actually moves the portrait up and down with bounce effect (500ms duration)
+- Game updates are skipped when paused but rendering continues
+- Portrait animations cannot be interrupted on game over screen
 
 ## [0.5.6] - 2025-11-12
 

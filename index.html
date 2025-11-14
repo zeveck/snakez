@@ -131,6 +131,16 @@
                     <div id="waveNumber">Wave 1</div>
                     <div id="enemyCount">Frogs: 0</div>
                 </div>
+                <button id="pauseBtn" class="pause-btn mobile-only" aria-label="Pause game">⏸</button>
+            </div>
+
+            <!-- Pause Overlay -->
+            <div id="pauseOverlay" class="pause-overlay" style="display: none;">
+                <div class="pause-content">
+                    <h2>PAUSED</h2>
+                    <p class="desktop-only">Press P to Resume</p>
+                    <p class="mobile-only">Tap to Resume</p>
+                </div>
             </div>
 
             <!-- Desktop Controls Reminder -->
@@ -206,7 +216,7 @@
         </div>
     </div>
 
-    <div id="version">v0.5.7</div>
+    <div id="version">v0.5.8</div>
 
     <!-- Audio Toggle Button -->
     <button id="audioToggle" class="audio-toggle" aria-label="Toggle audio">

@@ -423,6 +423,7 @@ const game = {
     isMobile: false,
     gameOverPortraitState: 'idle',
     gameOverPortraitTimer: 0,
+    paused: false,
 };
 
 // Input handlers
@@ -1617,6 +1618,10 @@ function initGame() {
             }
         });
 
+        // Pause button and overlay
+        document.getElementById('pauseBtn').addEventListener('click', togglePause);
+        document.getElementById('pauseOverlay').addEventListener('click', togglePause);
+
         // Setup controls (needed for Enter key on share screen)
         setupControls();
 
@@ -1998,6 +2003,11 @@ function setupControls() {
             }
         }
 
+        // Pause game with P key
+        if ((e.key === 'p' || e.key === 'P') && game.running && game.screen === 'game') {
+            togglePause();
+        }
+
         // Playtesting shortcut: Delete key to instantly die
         if (e.key === 'Delete' && game.running && game.player && !game.player.dead) {
             game.player.health = 0;
@@ -2114,6 +2124,8 @@ function startGame() {
     audioManager.hasInteracted = true;
     audioManager.playBackground();
     game.running = true;
+    game.paused = false;
+    document.getElementById('pauseOverlay').style.display = 'none';
     game.wave = 1;
     game.score = 0;
     game.enemies = [];
@@ -2219,13 +2231,29 @@ function spawnWave() {
     }
 }
 
+function togglePause() {
+    if (!game.running || game.screen !== 'game') return;
+
+    game.paused = !game.paused;
+    const pauseOverlay = document.getElementById('pauseOverlay');
+
+    if (game.paused) {
+        pauseOverlay.style.display = 'flex';
+    } else {
+        pauseOverlay.style.display = 'none';
+    }
+}
+
 function gameLoop(timestamp = 0) {
     if (!game.running) return;
 
     const deltaTime = timestamp - game.lastTime;
     game.lastTime = timestamp;
 
-    update();
+    // Skip updates when paused, but keep rendering
+    if (!game.paused) {
+        update();
+    }
     render();
 
     requestAnimationFrame(gameLoop);
