@@ -4,6 +4,13 @@ All notable changes to Snake Style will be documented in this file.
 
 For the most up-to-date version history, see the "Version History" section in README.md.
 
+## [0.5.9] - 2025-11-14
+
+### Fixed
+- Pause/unpause input mode consistency: On desktop, pause overlay now only unpauses with P key (not click)
+- Prevents accidental unpause when clicking window to regain focus
+- Mobile behavior unchanged: tap overlay to unpause as expected
+
 ## [0.5.8] - 2025-11-12
 
 ### Changed

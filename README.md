@@ -1,6 +1,6 @@
 # Snake Style 🐍⚔️
 
-**Version 0.5.8** - A swamp-based beat 'em up arcade game with character selection
+**Version 0.5.9** - A swamp-based beat 'em up arcade game with character selection
 
 Choose your serpent warrior and defend the swamp from endless waves of hostile frogs!
 
@@ -132,7 +132,26 @@ All pixel art graphics are located in the `/graphics` folder:
 
 ## 📝 Version History
 
-### v0.4.13 (Current)
+### v0.5.9 (Current)
+- 🔧 Fixed pause/unpause input mode consistency on desktop
+- 🎮 Desktop: pause overlay now requires P key to unpause (prevents accidental unpause from clicks)
+- 📱 Mobile: unchanged, tap overlay to unpause as expected
+
+### v0.5.8
+- ⏸️ Improved pause overlay transparency for better game visibility
+
+### v0.5.7
+- ⏸️ Added pause functionality with P key or pause button
+- 🐍 Interactive snake portrait on Game Over screen responds to controls
+- 🎮 Portrait animations for roll (0), whip (1), jump (UP), and swim (DOWN)
+
+### v0.5.6
+- 🌊 Made lily pads randomly placed with snake centered at game start
+
+### v0.5.5
+- ▶️ Fixed Play button on Share screen to work properly with click and Enter
+
+### v0.4.13
 - 📤 Added shareable Game Over screen URLs - share your results with friends!
 - 🔗 URL format: `#score=X&waves=Y&small=N&medium=N&poison=N&boss=N`
 - 🎯 Game Over screen can be loaded directly from URL with full parade

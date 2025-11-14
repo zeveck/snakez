@@ -1620,7 +1620,13 @@ function initGame() {
 
         // Pause button and overlay
         document.getElementById('pauseBtn').addEventListener('click', togglePause);
-        document.getElementById('pauseOverlay').addEventListener('click', togglePause);
+        document.getElementById('pauseOverlay').addEventListener('click', () => {
+            // Only allow click/tap to unpause on mobile devices
+            // On desktop, must use P key to maintain input mode consistency
+            if (game.isMobile) {
+                togglePause();
+            }
+        });
 
         // Setup controls (needed for Enter key on share screen)
         setupControls();
