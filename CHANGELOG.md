@@ -4,6 +4,19 @@ All notable changes to Snake Style will be documented in this file.
 
 For the most up-to-date version history, see the "Version History" section in README.md.
 
+## [0.5.7] - 2025-11-12
+
+### Added
+- Interactive snake portrait on Game Over/share screen responds to keyboard commands
+- Press 0 to make snake roll (with spinning animation)
+- Press 1 to make snake whip
+- Press UP to make snake jump
+- Press DOWN to make snake swim
+
+### Changed
+- Roll animation now actually rotates the portrait for visual spinning effect (600ms duration)
+- Jump animation now actually moves the portrait up and down with bounce effect (400ms duration)
+
 ## [0.5.6] - 2025-11-12
 
 ### Added

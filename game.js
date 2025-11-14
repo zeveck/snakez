@@ -421,6 +421,8 @@ const game = {
     },
     selectedSnakeId: null,
     isMobile: false,
+    gameOverPortraitState: 'idle',
+    gameOverPortraitTimer: 0,
 };
 
 // Input handlers
@@ -1970,6 +1972,32 @@ function setupControls() {
             }
         }
 
+        // Interactive portrait on game over screen (ignore key repeats to prevent jitter)
+        // Don't allow interrupting an animation that's already playing
+        if (game.screen === 'gameover' && !game.running && !e.repeat && game.gameOverPortraitTimer === 0) {
+            if (e.key === '0' || e.code === 'Digit0' || e.code === 'Numpad0') {
+                // Roll animation (longer to show full roll)
+                game.gameOverPortraitState = 'rolling';
+                game.gameOverPortraitTimer = 600; // Long enough to see a complete roll
+                updateGameOverPortrait();
+            } else if (e.key === '1' || e.code === 'Digit1') {
+                // Whip animation (temporary)
+                game.gameOverPortraitState = 'whipping';
+                game.gameOverPortraitTimer = 500; // Reset after 500ms
+                updateGameOverPortrait();
+            } else if (e.key === 'ArrowDown') {
+                // Swimming (temporary)
+                game.gameOverPortraitState = 'swimming';
+                game.gameOverPortraitTimer = 600; // Reset after 600ms
+                updateGameOverPortrait();
+            } else if (e.key === 'ArrowUp') {
+                // Jump and return to idle
+                game.gameOverPortraitState = 'jumping';
+                game.gameOverPortraitTimer = 500; // Match animation duration
+                updateGameOverPortrait();
+            }
+        }
+
         // Playtesting shortcut: Delete key to instantly die
         if (e.key === 'Delete' && game.running && game.player && !game.player.dead) {
             game.player.health = 0;
@@ -2165,6 +2193,7 @@ function returnToTitle() {
 }
 
 function setScreen(screen) {
+    game.screen = screen;
     document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
     if (screen === 'title') {
         document.getElementById('titleScreen').classList.add('active');
@@ -2420,16 +2449,9 @@ function gameOver(isSharedResult = false) {
     document.getElementById('bossFrogCount').textContent = frogCounts.large;
 
     // Update snake portrait on Game Over screen
-    const snakeId = game.selectedSnakeId || 'green';
-    const variant = SNAKE_VARIANTS[snakeId];
-    const gameOverPortrait = document.getElementById('gameOverSnakePortrait');
-
-    if (gameOverPortrait && variant) {
-        const spriteName = `${variant.spritePrefix}_idle`;
-        if (assets.images[spriteName]) {
-            gameOverPortrait.src = assets.images[spriteName].src;
-        }
-    }
+    game.gameOverPortraitState = 'idle';
+    game.gameOverPortraitTimer = 0;
+    updateGameOverPortrait();
 
 
     // Update buttons for shared results
@@ -2458,6 +2480,52 @@ function gameOver(isSharedResult = false) {
         if (!frogParade) frogParade = new FrogParade();
         frogParade.start(game.defeatedFrogs);
     }, 1000);
+}
+
+function updateGameOverPortrait() {
+    const gameOverPortrait = document.getElementById('gameOverSnakePortrait');
+    if (!gameOverPortrait) return;
+
+    const snakeId = game.selectedSnakeId || 'green';
+    const variant = SNAKE_VARIANTS[snakeId];
+    if (!variant) return;
+
+    const spritePrefix = variant.spritePrefix;
+    let spriteName = `${spritePrefix}_idle`;
+
+    // Remove animation classes by default
+    gameOverPortrait.classList.remove('rolling', 'jumping');
+
+    // Match state to sprite (same logic as HUD portrait)
+    if (game.gameOverPortraitState === 'rolling') {
+        spriteName = `${spritePrefix}_rolling`;
+        // Add rolling class to trigger CSS rotation animation
+        gameOverPortrait.classList.add('rolling');
+    } else if (game.gameOverPortraitState === 'whipping') {
+        spriteName = `${spritePrefix}_extended`;
+    } else if (game.gameOverPortraitState === 'swimming') {
+        spriteName = `${spritePrefix}_swimming`;
+    } else if (game.gameOverPortraitState === 'jumping') {
+        spriteName = `${spritePrefix}_jumping`;
+        // Add jumping class to trigger CSS jump animation
+        gameOverPortrait.classList.add('jumping');
+    }
+
+    // Update portrait src if sprite is available (fallback to idle if sprite missing)
+    if (assets.images[spriteName]) {
+        gameOverPortrait.src = assets.images[spriteName].src;
+    } else if (assets.images[`${spritePrefix}_idle`]) {
+        gameOverPortrait.src = assets.images[`${spritePrefix}_idle`].src;
+    }
+
+    // Handle timer countdown for temporary animations
+    if (game.gameOverPortraitTimer > 0) {
+        setTimeout(() => {
+            game.gameOverPortraitTimer = 0;
+            game.gameOverPortraitState = 'idle';
+            updateGameOverPortrait();
+        }, game.gameOverPortraitTimer);
+    }
 }
 
 // Initialize when DOM is ready

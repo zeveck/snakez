@@ -489,6 +489,14 @@ body {
     top: auto !important;
 }
 
+.game-over-snake-portrait.rolling {
+    animation: rollOnce 0.6s linear;
+}
+
+.game-over-snake-portrait.jumping {
+    animation: jumpOnce 0.5s ease-out;
+}
+
 .game-over-scores-center {
     text-align: center;
 }
@@ -577,6 +585,21 @@ body {
     to {
         transform: rotate(360deg);
     }
+}
+
+@keyframes rollOnce {
+    from {
+        transform: rotate(0deg) scale(0.8);
+    }
+    to {
+        transform: rotate(360deg) scale(0.8);
+    }
+}
+
+@keyframes jumpOnce {
+    0% { transform: translateY(0); }
+    50% { transform: translateY(-100px); }
+    100% { transform: translateY(0); }
 }
 
 .frog-count-grid {
