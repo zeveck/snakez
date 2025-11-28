@@ -4,6 +4,17 @@ All notable changes to Snake Style will be documented in this file.
 
 For the most up-to-date version history, see the "Version History" section in README.md.
 
+## [0.5.10] - 2025-11-28
+
+### Added
+- (Features added)
+
+### Changed
+- (Changes made)
+
+### Fixed
+- (Bugs fixed)
+
 ## [0.5.9] - 2025-11-14
 
 ### Fixed

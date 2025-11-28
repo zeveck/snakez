@@ -1,6 +1,6 @@
 # Snake Style 🐍⚔️
 
-**Version 0.5.9** - A swamp-based beat 'em up arcade game with character selection
+**Version 0.5.10** - A swamp-based beat 'em up arcade game with character selection
 
 Choose your serpent warrior and defend the swamp from endless waves of hostile frogs!
 
@@ -132,7 +132,10 @@ All pixel art graphics are located in the `/graphics` folder:
 
 ## 📝 Version History
 
-### v0.5.9 (Current)
+### v0.5.10 (Current)
+- (Add release notes here)
+
+### v0.5.9
 - 🔧 Fixed pause/unpause input mode consistency on desktop
 - 🎮 Desktop: pause overlay now requires P key to unpause (prevents accidental unpause from clicks)
 - 📱 Mobile: unchanged, tap overlay to unpause as expected

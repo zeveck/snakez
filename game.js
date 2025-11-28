@@ -1,15 +1,46 @@
-// Game Configuration
-const CONFIG = {
-    CANVAS_WIDTH: 1200,
-    CANVAS_HEIGHT: 600,
-    WATER_LEVEL: 450,
-    GRAVITY: 0.5,
-    FRICTION: 0.85,
-    WATER_FRICTION: 0.5,
-    PLAYER_SPEED: 5,
-    PLAYER_JUMP: 12,
-    WATER_JUMP: 6,
-    COMBO_TIMEOUT: 2000,
+// game.js - Game logic (config is in config.js)
+
+// Helper: Get snake sprite name based on state
+function getSnakeSpriteName(spritePrefix, state, inWater, onGround) {
+    if (state === 'rolling') return `${spritePrefix}_rolling`;
+    if (state === 'whipping') return `${spritePrefix}_extended`;
+    if (inWater) return `${spritePrefix}_swimming`;
+    if (!onGround) return `${spritePrefix}_jumping`;
+    return `${spritePrefix}_idle`;
+}
+
+// Helper: Calculate sprite dimensions preserving aspect ratio
+function getSpriteSize(sprite, targetSize) {
+    const aspect = sprite.width / sprite.height;
+    if (aspect > 1) {
+        // Wider than tall
+        return { width: targetSize, height: targetSize / aspect };
+    }
+    // Taller than wide (or square)
+    return { width: targetSize * aspect, height: targetSize };
+}
+
+// Particle pool for object reuse (reduces GC pressure)
+const particlePool = {
+    pool: [],
+    maxPoolSize: CONFIG.PARTICLE_POOL_SIZE,
+    maxActiveParticles: CONFIG.PARTICLE_MAX_ACTIVE,
+
+    get(x, y, vx, vy, color, life) {
+        let particle = this.pool.pop();
+        if (particle) {
+            particle.reset(x, y, vx, vy, color, life);
+        } else {
+            particle = new Particle(x, y, vx, vy, color, life);
+        }
+        return particle;
+    },
+
+    release(particle) {
+        if (this.pool.length < this.maxPoolSize) {
+            this.pool.push(particle);
+        }
+    }
 };
 
 // Snake character variants
@@ -88,21 +119,27 @@ const assets = {
     load(callback) {
         this.total = Object.keys(this.manifest).length;
         this.loaded = 0;
+        this.failed = 0;
+
+        const checkComplete = () => {
+            if (this.loaded + this.failed === this.total && callback) {
+                if (this.failed > 0) {
+                    console.log(`${this.failed} asset(s) failed to load`);
+                }
+                callback();
+            }
+        };
 
         for (const [key, path] of Object.entries(this.manifest)) {
             const img = new Image();
             img.onload = () => {
                 this.loaded++;
-                if (this.loaded === this.total && callback) {
-                    callback();
-                }
+                checkComplete();
             };
             img.onerror = () => {
                 console.error(`Failed to load image: ${path}`);
-                this.loaded++;
-                if (this.loaded === this.total && callback) {
-                    callback();
-                }
+                this.failed++;
+                checkComplete();
             };
             img.src = path;
             this.images[key] = img;
@@ -234,13 +271,19 @@ const audioManager = {
         musicValue.textContent = Math.round(this.volumes.music * 100);
         sfxValue.textContent = Math.round(this.volumes.sfx * 100);
 
-        // Add event listeners
+        // Add event listeners (debounce saveSettings to avoid localStorage spam during drag)
+        let saveTimeout;
+        const debouncedSave = () => {
+            clearTimeout(saveTimeout);
+            saveTimeout = setTimeout(() => this.saveSettings(), 300);
+        };
+
         overallSlider.addEventListener('input', (e) => {
             const val = parseInt(e.target.value);
             overallValue.textContent = val;
             this.volumes.overall = val / 100;
             this.updateVolumes();
-            this.saveSettings();
+            debouncedSave();
         });
 
         musicSlider.addEventListener('input', (e) => {
@@ -248,14 +291,14 @@ const audioManager = {
             musicValue.textContent = val;
             this.volumes.music = val / 100;
             this.updateVolumes();
-            this.saveSettings();
+            debouncedSave();
         });
 
         sfxSlider.addEventListener('input', (e) => {
             const val = parseInt(e.target.value);
             sfxValue.textContent = val;
             this.volumes.sfx = val / 100;
-            this.saveSettings();
+            debouncedSave();
         });
     },
 
@@ -411,8 +454,8 @@ const game = {
     lilyPads: [],
     particles: [],
     keys: {},
-    touches: {},
     lastTime: 0,
+    time: 0, // Current frame timestamp from requestAnimationFrame
     screen: 'title',
     defeatedFrogs: [],
     titleSnakes: {
@@ -424,6 +467,7 @@ const game = {
     gameOverPortraitState: 'idle',
     gameOverPortraitTimer: 0,
     paused: false,
+    hudElements: null,
 };
 
 // Input handlers
@@ -536,17 +580,8 @@ class Snake extends Entity {
         this.whipTimer = 0;
         this.whipCooldown = 0;
         this.invulnerable = 0;
-        this.segments = [];
         this.droppingThrough = false;
         this.groundedFrames = 0;
-        this.initSegments();
-    }
-
-    initSegments() {
-        // Create body segments for visual effect
-        for (let i = 0; i < 5; i++) {
-            this.segments.push({ x: this.x - i * 8, y: this.y + this.height / 2 });
-        }
     }
 
     update() {
@@ -597,9 +632,6 @@ class Snake extends Entity {
         if (playerInput.whip && this.whipCooldown === 0 && this.state === 'idle') {
             this.startWhip();
         }
-
-        // Update body segments
-        this.updateSegments();
     }
 
     handleNormalMovement(playerInput) {
@@ -729,19 +761,6 @@ class Snake extends Entity {
         gameOver();
     }
 
-    updateSegments() {
-        // Follow the snake head
-        if (this.segments.length > 0) {
-            this.segments[0].x += (this.x - this.segments[0].x) * 0.3;
-            this.segments[0].y += (this.y + this.height / 2 - this.segments[0].y) * 0.3;
-
-            for (let i = 1; i < this.segments.length; i++) {
-                this.segments[i].x += (this.segments[i - 1].x - this.segments[i].x) * 0.25;
-                this.segments[i].y += (this.segments[i - 1].y - this.segments[i].y) * 0.25;
-            }
-        }
-    }
-
     draw(ctx) {
         // Don't render dead players
         if (this.dead) {
@@ -750,18 +769,7 @@ class Snake extends Entity {
 
         // Determine which sprite to use
         const playerPrefix = this.variant.spritePrefix;
-        let spriteName = `${playerPrefix}_idle`;
-
-        if (this.state === 'rolling') {
-            spriteName = `${playerPrefix}_rolling`;
-        } else if (this.state === 'whipping') {
-            spriteName = `${playerPrefix}_extended`;
-        } else if (this.inWater) {
-            spriteName = `${playerPrefix}_swimming`;
-        } else if (!this.onGround) {
-            spriteName = `${playerPrefix}_jumping`;
-        }
-
+        const spriteName = getSnakeSpriteName(playerPrefix, this.state, this.inWater, this.onGround);
         let sprite = assets.get(spriteName);
 
         // Fallback to idle if sprite doesn't exist (e.g., P1 swimming)
@@ -796,18 +804,7 @@ class Snake extends Entity {
             }
 
             // Scale sprite to fit target size while preserving aspect ratio
-            const spriteAspect = sprite.width / sprite.height;
-            let spriteWidth, spriteHeight;
-
-            if (spriteAspect > 1) {
-                // Wider than tall - scale based on width
-                spriteWidth = targetSize;
-                spriteHeight = spriteWidth / spriteAspect;
-            } else {
-                // Taller than wide - scale based on height
-                spriteHeight = targetSize;
-                spriteWidth = spriteHeight * spriteAspect;
-            }
+            const { width: spriteWidth, height: spriteHeight } = getSpriteSize(sprite, targetSize);
 
             // Center the sprite on the entity position
             const drawX = this.x + this.width / 2 - spriteWidth / 2;
@@ -823,7 +820,7 @@ class Snake extends Entity {
             // Add rotation effect for rolling
             if (this.state === 'rolling') {
                 ctx.translate(drawX + spriteWidth / 2, drawY + spriteHeight / 2);
-                ctx.rotate((Date.now() / 50) % (Math.PI * 2));
+                ctx.rotate((game.time / 50) % (Math.PI * 2));
                 ctx.drawImage(sprite, -spriteWidth / 2, -spriteHeight / 2, spriteWidth, spriteHeight);
             } else {
                 ctx.drawImage(sprite, drawX, drawY, spriteWidth, spriteHeight);
@@ -845,50 +842,30 @@ class Snake extends Entity {
 
 class Frog extends Entity {
     constructor(x, y, type = 'small') {
-        super(x, y, 30, 30);
+        const config = FROG_TYPES[type];
+        super(x, y, config.width, config.height);
         this.type = type;
-        this.health = type === 'small' ? 20 : type === 'medium' ? 40 : type === 'poison_dart' ? 15 : 80;
-        this.maxHealth = this.health;
+        this.config = config;  // Store reference for easy access
+        this.health = config.health;
+        this.maxHealth = config.health;
         this.alive = true;
         this.jumpTimer = 0;
         this.jumpCooldown = Math.random() * 60 + 40;
-        this.color = type === 'small' ? '#4CAF50' : type === 'medium' ? '#2196F3' : type === 'poison_dart' ? '#FF00FF' : '#FF5722';
+        this.color = config.color;
         this.attackTimer = 0;
         this.facing = 1; // 1 = right, -1 = left
         this.groundedFrames = 0; // Track how long we've been on ground
-        this.hueRotation = type === 'poison_dart' ? Math.floor(Math.random() * 360) : 0; // Random color for poison darts
+        this.jumpPower = config.jumpPower;
 
-        // Type specific properties
-        if (type === 'small') {
-            this.width = 30;
-            this.height = 30;
-            this.jumpPower = 8;
-        } else if (type === 'medium') {
-            this.width = 40;
-            this.height = 40;
-            this.jumpPower = 12;
-        } else if (type === 'poison_dart') {
-            this.width = 25;
-            this.height = 25;
-            this.jumpPower = 14;
-        } else {
-            this.width = 60;
-            this.height = 60;
-            this.jumpPower = 10;
-        }
+        // Random hue for poison dart frogs (pre-compute filter string)
+        this.hueRotation = config.hasRandomHue ? Math.floor(Math.random() * 360) : 0;
+        this.hueFilter = config.hasRandomHue ? `hue-rotate(${this.hueRotation}deg)` : null;
     }
 
     update() {
         if (!this.alive) return;
 
         super.update();
-
-        // Track how long we've been on ground to avoid jittering sprites
-        if (this.onGround) {
-            this.groundedFrames++;
-        } else {
-            this.groundedFrames = 0;
-        }
 
         // Track how long we've been on ground to avoid jittering sprites
         if (this.onGround) {
@@ -917,7 +894,7 @@ class Frog extends Entity {
             const dist = Math.sqrt(dx * dx + dy * dy);
 
             if (dist < 35) {
-                target.takeDamage(this.type === 'small' ? 3 : this.type === 'medium' ? 6 : this.type === 'poison_dart' ? 10 : 12);
+                target.takeDamage(this.config.attackDamage);
                 this.attackTimer = 0;
             }
         }
@@ -925,7 +902,7 @@ class Frog extends Entity {
 
     findNearestPlayer() {
         // Return the player if alive, otherwise null
-        if (!game.player || game.player.dead || game.player.health <= 0) {
+        if (!game.player || game.player.dead) {
             return null;
         }
         return game.player;
@@ -948,7 +925,7 @@ class Frog extends Entity {
 
     die() {
         this.alive = false;
-        game.score += this.type === 'small' ? 10 : this.type === 'medium' ? 25 : this.type === 'poison_dart' ? 35 : 50;
+        game.score += this.config.score;
         game.defeatedFrogs.push({ type: this.type }); // Track for game over parade
         createDeathEffect(this.x + this.width / 2, this.y + this.height / 2);
     }
@@ -960,42 +937,23 @@ class Frog extends Entity {
         // Determine which sprite to use
         // Require 3 frames on ground before showing idle sprite to prevent jittering
         const isInAir = this.groundedFrames < 3;
-        let spriteName;
-        if (this.type === 'large') {
-            spriteName = isInAir ? 'frog_large_boss_jumping' : 'frog_large_boss_idle';
-        } else if (this.type === 'poison_dart') {
-            spriteName = isInAir ? 'frog_poison_dart_jumping' : 'frog_poison_dart_idle';
-        } else if (this.type === 'medium') {
-            spriteName = isInAir ? 'frog_medium_jumping' : 'frog_medium_idle';
-        } else {
-            spriteName = isInAir ? 'frog_small_jumping' : 'frog_small_idle';
-        }
+        const suffix = this.config.spriteSuffix;
+        const spriteName = isInAir ? `frog_${suffix}_jumping` : `frog_${suffix}_idle`;
 
         const sprite = assets.get(spriteName);
 
         if (sprite && sprite.complete) {
             // Calculate sprite size preserving aspect ratio
-            // Use entity dimensions as target size, with boost for small jumping frogs
+            // Use entity dimensions as target size, with optional boost when jumping
             let targetSize = Math.max(this.width, this.height);
 
-            // Make small jumping frogs more visible
-            if (this.type === 'small' && isInAir) {
-                targetSize = 50; // Larger for jumping small frogs
+            // Some frog types have boosted size when jumping for visibility
+            if (isInAir && this.config.jumpingTargetSize) {
+                targetSize = this.config.jumpingTargetSize;
             }
 
             // Scale sprite to fit target size while preserving aspect ratio
-            const spriteAspect = sprite.width / sprite.height;
-            let spriteWidth, spriteHeight;
-
-            if (spriteAspect > 1) {
-                // Wider than tall - scale based on width
-                spriteWidth = targetSize;
-                spriteHeight = spriteWidth / spriteAspect;
-            } else {
-                // Taller than wide - scale based on height
-                spriteHeight = targetSize;
-                spriteWidth = spriteHeight * spriteAspect;
-            }
+            const { width: spriteWidth, height: spriteHeight } = getSpriteSize(sprite, targetSize);
 
             // Center the sprite on the entity position
             const drawX = this.x + this.width / 2 - spriteWidth / 2;
@@ -1003,9 +961,9 @@ class Frog extends Entity {
 
             // Flip sprite based on facing direction
             ctx.save();
-            // Apply hue rotation for poison dart frogs
-            if (this.type === 'poison_dart') {
-                ctx.filter = `hue-rotate(${this.hueRotation}deg)`;
+            // Apply hue rotation for poison dart frogs (using pre-computed filter string)
+            if (this.hueFilter) {
+                ctx.filter = this.hueFilter;
             }
             if (this.facing < 0) {
                 ctx.translate(drawX + spriteWidth / 2, drawY + spriteHeight / 2);
@@ -1056,11 +1014,8 @@ class LilyPad {
         const sprite = assets.get(spriteName);
 
         if (sprite && sprite.complete) {
-            // Calculate sprite size preserving aspect ratio
-            // Scale to match lily pad width
-            const spriteAspect = sprite.width / sprite.height;
-            const spriteWidth = this.width;
-            const spriteHeight = spriteWidth / spriteAspect;
+            // Scale to match lily pad width while preserving aspect ratio
+            const { width: spriteWidth, height: spriteHeight } = getSpriteSize(sprite, this.width);
 
             const drawX = this.x + this.width / 2 - spriteWidth / 2;
             const drawY = this.y + this.height / 2 - spriteHeight / 2;
@@ -1081,6 +1036,10 @@ class LilyPad {
 
 class Particle {
     constructor(x, y, vx, vy, color, life) {
+        this.reset(x, y, vx, vy, color, life);
+    }
+
+    reset(x, y, vx, vy, color, life) {
         this.x = x;
         this.y = y;
         this.vx = vx;
@@ -1111,10 +1070,10 @@ class Particle {
 class ParadeFrog {
     constructor(type, canvasHeight, jumpMode = 'steady') {
         this.type = type;
-        // Size based on type
-        const sizes = { small: 30, medium: 40, poison_dart: 25, large: 60 };
-        this.width = sizes[type] || 30;
-        this.height = sizes[type] || 30;
+        const config = FROG_TYPES[type];
+        this.config = config;
+        this.width = config.width;
+        this.height = config.height;
 
         // Start off-screen left - further back during wave phase for surge effect
         if (jumpMode === 'wave') {
@@ -1160,8 +1119,9 @@ class ParadeFrog {
         this.groundedFrames = 0;
         this.facing = 1; // Always face right for parade
 
-        // Random hue for poison dart frogs
-        this.hue = type === 'poison_dart' ? Math.random() * 360 : 0;
+        // Random hue for poison dart frogs (pre-compute filter string)
+        this.hue = config.hasRandomHue ? Math.random() * 360 : 0;
+        this.hueFilter = config.hasRandomHue ? `hue-rotate(${this.hue}deg)` : null;
     }
 
     update() {
@@ -1197,30 +1157,25 @@ class ParadeFrog {
     draw(ctx) {
         // Determine sprite (idle when grounded for 3+ frames, jumping otherwise)
         const isIdle = this.groundedFrames >= 3;
-        const spriteSuffix = this.type === 'large' ? 'large_boss' : this.type;
         const spriteState = isIdle ? 'idle' : 'jumping';
-        const spriteName = `frog_${spriteSuffix}_${spriteState}`;
+        const spriteName = `frog_${this.config.spriteSuffix}_${spriteState}`;
         const sprite = assets.get(spriteName);
 
         if (sprite && sprite.complete) {
-            const spriteAspect = sprite.width / sprite.height;
-            let spriteWidth = this.width;
-            let spriteHeight = spriteWidth / spriteAspect;
-
-            // Boost size for small jumping frogs
-            if (this.type === 'small' && !isIdle) {
-                spriteWidth *= 1.5;
-                spriteHeight *= 1.5;
-            }
+            // Use boosted size when jumping if configured
+            const targetSize = (!isIdle && this.config.jumpingTargetSize)
+                ? this.config.jumpingTargetSize
+                : this.width;
+            let { width: spriteWidth, height: spriteHeight } = getSpriteSize(sprite, targetSize);
 
             const drawX = this.x + this.width / 2 - spriteWidth / 2;
             const drawY = this.y + this.height / 2 - spriteHeight / 2;
 
             ctx.save();
 
-            // Apply hue rotation for poison dart frogs
-            if (this.type === 'poison_dart') {
-                ctx.filter = `hue-rotate(${this.hue}deg)`;
+            // Apply hue rotation for poison dart frogs (using pre-computed filter string)
+            if (this.hueFilter) {
+                ctx.filter = this.hueFilter;
             }
 
             // No flipping needed - always face right
@@ -1364,10 +1319,16 @@ class FrogParade {
         this.spawnFrogs();
 
         // Update all frogs
-        this.frogs.forEach(frog => frog.update());
+        for (let i = 0; i < this.frogs.length; i++) {
+            this.frogs[i].update();
+        }
 
-        // Remove frogs that are off screen
-        this.frogs = this.frogs.filter(frog => !frog.isOffScreen(this.canvas.width));
+        // Remove frogs that are off screen (in-place to avoid GC pressure)
+        for (let i = this.frogs.length - 1; i >= 0; i--) {
+            if (this.frogs[i].isOffScreen(this.canvas.width)) {
+                this.frogs.splice(i, 1);
+            }
+        }
     }
 
     spawnFrogs() {
@@ -1460,12 +1421,13 @@ class FrogParade {
 // Global parade instance
 let frogParade = null;
 
-// Particle effects
+// Particle effects (using pool with cap)
 function createSplash(x, y) {
-    for (let i = 0; i < 8; i++) {
+    const count = Math.min(8, particlePool.maxActiveParticles - game.particles.length);
+    for (let i = 0; i < count; i++) {
         const angle = (Math.PI * 2 * i) / 8;
         const speed = Math.random() * 3 + 2;
-        game.particles.push(new Particle(
+        game.particles.push(particlePool.get(
             x, y,
             Math.cos(angle) * speed,
             Math.sin(angle) * speed - 2,
@@ -1476,10 +1438,11 @@ function createSplash(x, y) {
 }
 
 function createHitEffect(x, y) {
-    for (let i = 0; i < 12; i++) {
+    const count = Math.min(12, particlePool.maxActiveParticles - game.particles.length);
+    for (let i = 0; i < count; i++) {
         const angle = (Math.PI * 2 * i) / 12;
         const speed = Math.random() * 4 + 3;
-        game.particles.push(new Particle(
+        game.particles.push(particlePool.get(
             x, y,
             Math.cos(angle) * speed,
             Math.sin(angle) * speed,
@@ -1490,10 +1453,11 @@ function createHitEffect(x, y) {
 }
 
 function createDeathEffect(x, y) {
-    for (let i = 0; i < 20; i++) {
+    const count = Math.min(20, particlePool.maxActiveParticles - game.particles.length);
+    for (let i = 0; i < count; i++) {
         const angle = Math.random() * Math.PI * 2;
         const speed = Math.random() * 5 + 2;
-        game.particles.push(new Particle(
+        game.particles.push(particlePool.get(
             x, y,
             Math.cos(angle) * speed,
             Math.sin(angle) * speed,
@@ -1505,10 +1469,11 @@ function createDeathEffect(x, y) {
 
 function createPlayerDeathEffect(x, y) {
     // Create larger, more dramatic particle explosion for player death
-    for (let i = 0; i < 30; i++) {
+    const count = Math.min(30, particlePool.maxActiveParticles - game.particles.length);
+    for (let i = 0; i < count; i++) {
         const angle = Math.random() * Math.PI * 2;
         const speed = Math.random() * 8 + 3;
-        game.particles.push(new Particle(
+        game.particles.push(particlePool.get(
             x, y,
             Math.cos(angle) * speed,
             Math.sin(angle) * speed,
@@ -1543,9 +1508,24 @@ function initGame() {
     game.titleCanvas.height = CONFIG.CANVAS_HEIGHT;
     game.ctx = game.canvas.getContext('2d');
 
-    // Set canvas size
+    // Set canvas size (debounced to avoid rapid-fire during drag resize)
     resizeCanvas();
-    window.addEventListener('resize', resizeCanvas);
+    let resizeTimeout;
+    window.addEventListener('resize', () => {
+        clearTimeout(resizeTimeout);
+        resizeTimeout = setTimeout(resizeCanvas, 150);
+    });
+
+    // Cache HUD DOM elements (avoid repeated lookups)
+    game.hudElements = {
+        healthBar: document.getElementById('player-health'),
+        comboDisplay: document.getElementById('player-combo'),
+        playerName: document.getElementById('player-name'),
+        portrait: document.getElementById('player-portrait'),
+        waveNumber: document.getElementById('waveNumber'),
+        enemyCount: document.getElementById('enemyCount'),
+        pauseOverlay: document.getElementById('pauseOverlay'),
+    };
 
     // Show loading message
     const startBtn = document.getElementById('startBtn');
@@ -1558,7 +1538,11 @@ function initGame() {
         // Assets loaded successfully
         startBtn.textContent = originalText;
         startBtn.disabled = false;
-        console.log('All assets loaded successfully!');
+        if (assets.failed === 0) {
+            console.log('All assets loaded successfully!');
+        } else {
+            console.log(`Assets loaded with ${assets.failed} failure(s)`);
+        }
 
         // Pre-render Game Over background so it's ready when needed
         const gameOverBg = document.getElementById('gameOverBg');
@@ -2102,10 +2086,10 @@ function handleJoystickMove(touch, joystick, stick) {
 function updateKeyboardInput() {
     input.x = 0;
     input.y = 0;
-    if (game.keys['arrowleft']) input.x = -1;
-    if (game.keys['arrowright']) input.x = 1;
-    if (game.keys['arrowup']) input.y = -1;
-    if (game.keys['arrowdown']) input.y = 1;
+    if (game.keys['arrowleft'] || game.keys['a']) input.x = -1;
+    if (game.keys['arrowright'] || game.keys['d']) input.x = 1;
+    if (game.keys['arrowup'] || game.keys['w']) input.y = -1;
+    if (game.keys['arrowdown'] || game.keys['s']) input.y = 1;
 }
 
 function selectSnake(snakeId) {
@@ -2241,18 +2225,13 @@ function togglePause() {
     if (!game.running || game.screen !== 'game') return;
 
     game.paused = !game.paused;
-    const pauseOverlay = document.getElementById('pauseOverlay');
-
-    if (game.paused) {
-        pauseOverlay.style.display = 'flex';
-    } else {
-        pauseOverlay.style.display = 'none';
-    }
+    game.hudElements.pauseOverlay.style.display = game.paused ? 'flex' : 'none';
 }
 
 function gameLoop(timestamp = 0) {
     if (!game.running) return;
 
+    game.time = timestamp; // Store for use in animations
     const deltaTime = timestamp - game.lastTime;
     game.lastTime = timestamp;
 
@@ -2274,8 +2253,12 @@ function update() {
 
     game.enemies.forEach(enemy => enemy.update());
 
-    // Remove dead enemies
-    game.enemies = game.enemies.filter(e => e.alive);
+    // Remove dead enemies (in-place to avoid creating new array every frame)
+    for (let i = game.enemies.length - 1; i >= 0; i--) {
+        if (!game.enemies[i].alive) {
+            game.enemies.splice(i, 1);
+        }
+    }
 
     // Check wave completion
     if (game.enemies.length === 0 && game.running) {
@@ -2288,9 +2271,14 @@ function update() {
     // Update lily pads
     game.lilyPads.forEach(pad => pad.update());
 
-    // Update particles
-    game.particles.forEach(p => p.update());
-    game.particles = game.particles.filter(p => p.life > 0);
+    // Update particles (return dead ones to pool for reuse)
+    for (let i = game.particles.length - 1; i >= 0; i--) {
+        game.particles[i].update();
+        if (game.particles[i].life <= 0) {
+            particlePool.release(game.particles[i]);
+            game.particles.splice(i, 1);
+        }
+    }
 
     // Update HUD
     updateHUD();
@@ -2301,37 +2289,7 @@ function render() {
 
     // Draw background image
     const bg = assets.get('background_swamp');
-    if (bg) {
-        ctx.drawImage(bg, 0, 0, CONFIG.CANVAS_WIDTH, CONFIG.CANVAS_HEIGHT);
-    } else {
-        // Fallback to gradient if image not loaded
-        ctx.fillStyle = '#87CEEB';
-        ctx.fillRect(0, 0, CONFIG.CANVAS_WIDTH, CONFIG.CANVAS_HEIGHT);
-
-        // Draw background gradient (sky)
-        const gradient = ctx.createLinearGradient(0, 0, 0, CONFIG.WATER_LEVEL);
-        gradient.addColorStop(0, '#87CEEB');
-        gradient.addColorStop(1, '#B0E0E6');
-        ctx.fillStyle = gradient;
-        ctx.fillRect(0, 0, CONFIG.CANVAS_WIDTH, CONFIG.WATER_LEVEL);
-
-        // Draw water
-        ctx.fillStyle = '#4FC3F7';
-        ctx.fillRect(0, CONFIG.WATER_LEVEL, CONFIG.CANVAS_WIDTH, CONFIG.CANVAS_HEIGHT - CONFIG.WATER_LEVEL);
-
-        // Water waves effect
-        ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
-        ctx.lineWidth = 2;
-        for (let i = 0; i < 3; i++) {
-            ctx.beginPath();
-            for (let x = 0; x < CONFIG.CANVAS_WIDTH; x += 20) {
-                const y = CONFIG.WATER_LEVEL + Math.sin((x + Date.now() / 200 + i * 100) / 30) * 5 + i * 15;
-                if (x === 0) ctx.moveTo(x, y);
-                else ctx.lineTo(x, y);
-            }
-            ctx.stroke();
-        }
-    }
+    ctx.drawImage(bg, 0, 0, CONFIG.CANVAS_WIDTH, CONFIG.CANVAS_HEIGHT);
 
     // Draw lily pads
     game.lilyPads.forEach(pad => pad.draw(ctx));
@@ -2347,55 +2305,41 @@ function render() {
 }
 
 function updateHUD() {
-    if (!game.player) return;
+    if (!game.player || !game.hudElements) return;
 
-    const healthBar = document.getElementById('player-health');
-    if (healthBar) {
-        healthBar.style.width = game.player.health + '%';
+    const hud = game.hudElements;
+
+    if (hud.healthBar) {
+        hud.healthBar.style.width = game.player.health + '%';
     }
 
-    const comboDisplay = document.getElementById('player-combo');
-    if (comboDisplay) {
-        comboDisplay.textContent = game.player.combo;
+    if (hud.comboDisplay) {
+        hud.comboDisplay.textContent = game.player.combo;
     }
 
-    const playerName = document.getElementById('player-name');
-    if (playerName && game.player.variant) {
-        playerName.textContent = game.player.variant.displayName;
+    if (hud.playerName && game.player.variant) {
+        hud.playerName.textContent = game.player.variant.displayName;
     }
 
-    // Update player portrait based on current action (match main sprite rendering logic)
-    const portrait = document.getElementById('player-portrait');
-    if (portrait && game.player.variant) {
+    // Update player portrait based on current action
+    if (hud.portrait && game.player.variant) {
         const spritePrefix = game.player.variant.spritePrefix;
-        let spriteName = `${spritePrefix}_idle`;
-
-        if (game.player.state === 'rolling') {
-            spriteName = `${spritePrefix}_rolling`;
-        } else if (game.player.state === 'whipping') {
-            spriteName = `${spritePrefix}_extended`;
-        } else if (game.player.inWater) {
-            spriteName = `${spritePrefix}_swimming`;
-        } else if (!game.player.onGround) {
-            spriteName = `${spritePrefix}_jumping`;
-        }
+        const spriteName = getSnakeSpriteName(spritePrefix, game.player.state, game.player.inWater, game.player.onGround);
 
         // Update portrait src if sprite is available (fallback to idle if sprite missing)
         if (assets.images[spriteName]) {
-            portrait.src = assets.images[spriteName].src;
+            hud.portrait.src = assets.images[spriteName].src;
         } else if (assets.images[`${spritePrefix}_idle`]) {
-            portrait.src = assets.images[`${spritePrefix}_idle`].src;
+            hud.portrait.src = assets.images[`${spritePrefix}_idle`].src;
         }
     }
 
-    const waveNumber = document.getElementById('waveNumber');
-    if (waveNumber) {
-        waveNumber.textContent = `Wave ${game.wave}`;
+    if (hud.waveNumber) {
+        hud.waveNumber.textContent = `Wave ${game.wave}`;
     }
 
-    const enemyCount = document.getElementById('enemyCount');
-    if (enemyCount) {
-        enemyCount.textContent = `Frogs: ${game.enemies.length}`;
+    if (hud.enemyCount) {
+        hud.enemyCount.textContent = `Frogs: ${game.enemies.length}`;
     }
 }
 
@@ -2525,23 +2469,14 @@ function updateGameOverPortrait() {
     if (!variant) return;
 
     const spritePrefix = variant.spritePrefix;
-    let spriteName = `${spritePrefix}_idle`;
+    const state = game.gameOverPortraitState;
+    const spriteName = getSnakeSpriteName(spritePrefix, state, state === 'swimming', state !== 'jumping');
 
-    // Remove animation classes by default
+    // Handle CSS animation classes
     gameOverPortrait.classList.remove('rolling', 'jumping');
-
-    // Match state to sprite (same logic as HUD portrait)
-    if (game.gameOverPortraitState === 'rolling') {
-        spriteName = `${spritePrefix}_rolling`;
-        // Add rolling class to trigger CSS rotation animation
+    if (state === 'rolling') {
         gameOverPortrait.classList.add('rolling');
-    } else if (game.gameOverPortraitState === 'whipping') {
-        spriteName = `${spritePrefix}_extended`;
-    } else if (game.gameOverPortraitState === 'swimming') {
-        spriteName = `${spritePrefix}_swimming`;
-    } else if (game.gameOverPortraitState === 'jumping') {
-        spriteName = `${spritePrefix}_jumping`;
-        // Add jumping class to trigger CSS jump animation
+    } else if (state === 'jumping') {
         gameOverPortrait.classList.add('jumping');
     }
 

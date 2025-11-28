@@ -344,6 +344,9 @@ body {
     .desktop-only {
         display: none;
     }
+    #mobileControls {
+        display: flex;
+    }
 }
 
 #desktopControls {
@@ -403,12 +406,6 @@ body {
 
 #mobileControls.active {
     display: flex;
-}
-
-@media (max-width: 768px), (pointer: coarse) {
-    #mobileControls {
-        display: flex;
-    }
 }
 
 .joystick-container {
@@ -985,67 +982,6 @@ body {
     pointer-events: none;
 }
 
-/* Audio Toggle Button */
-
-.audio-toggle {
-    position: fixed;
-    bottom: 10px;
-    left: 10px;
-    background: none;
-    border: none;
-    cursor: pointer;
-    z-index: 1000;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 1.8rem;
-    transition: all 0.2s ease;
-    padding: 8px;
-    opacity: 0.5;
-}
-
-
-
-.audio-toggle:hover {
-    opacity: 1;
-    transform: scale(1.05);
-}
-
-
-
-
-
-
-
-
-.audio-toggle:hover {
-    background: rgba(0, 0, 0, 0.9);
-    border-color: #4CAF50;
-    transform: scale(1.1);
-}
-
-.audio-toggle:active {
-    transform: scale(0.95);
-}
-
-.audio-icon {
-    display: none;
-    line-height: 1;
-}
-
-/* Show muted icon by default */
-.audio-toggle .audio-icon.muted {
-    display: block;
-}
-
-/* When unmuted, show unmuted icon */
-.audio-toggle.unmuted .audio-icon.muted {
-    display: none;
-}
-
-.audio-toggle.unmuted .audio-icon.unmuted {
-    display: block;
-}
 
 /* Audio Toggle Button */
 .audio-toggle {
