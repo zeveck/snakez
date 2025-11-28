@@ -4,6 +4,33 @@ All notable changes to Snake Style will be documented in this file.
 
 For the most up-to-date version history, see the "Version History" section in README.md.
 
+## [0.6.4] - 2025-11-28
+
+### Changed
+- Increased Jade's jumping sprite size from 65 to 80 for better visibility
+
+### Fixed
+- README: Fixed stale 2-player control references (F/K, G/L) → single-player controls (0, 1)
+- README: Added missing WASD controls, pause key (P), drop-through-pad controls
+- README: Added poison dart frog to enemy types, scoring, and AI sections
+- README: Added config.js to project structure
+- README: Updated "Player 1/2 sprites" → "Jade/Blaze snake sprites"
+- README: Replaced obsolete "Team Coordination" tip with "Water Jumping" tip
+
+## [0.6.3] - 2025-11-28
+
+### Added
+- Targeted lily pad jumping: when in water and well-aligned under a lily pad, jump calculates exact velocity to arc onto it
+- Configurable wave frog counts table in `config.js` with specific counts per wave (wave 1: 5, wave 2: 100, scaling to wave 10: 1000)
+- Jump cooldown after water-to-pad landings to prevent accidental re-jump when holding up
+
+### Changed
+- Wave difficulty significantly increased (previously linear 3 + wave*2 formula)
+- Waves beyond 10 use fallback formula: 1000 + (wave-10)*250, capped at 2000
+
+### Fixed
+- Improved lily pad landing detection at arc peak for more reliable water jumps
+
 ## [0.6.2] - 2025-11-28
 
 ### Changed
@@ -38,13 +65,32 @@ For the most up-to-date version history, see the "Version History" section in RE
 ## [0.5.10] - 2025-11-28
 
 ### Added
-- (Features added)
+- New `config.js` file with all game configuration constants extracted from game.js
+- `FROG_TYPES` configuration object centralizing all frog type properties (width, height, health, jumpPower, attackDamage, score, color, spriteSuffix)
+- Particle pool system for object reuse - reduces garbage collection pressure
+- `game.hudElements` cache for DOM element references (avoids getElementById every frame)
+- `game.time` property for consistent animation timing across game loop
+- WASD keyboard controls as alternative to arrow keys
+- `/commitcheckpoint` and `/revversion` Claude Code slash commands
 
 ### Changed
-- (Changes made)
+- Extracted `getSnakeSpriteName()` helper (was duplicated 3x in codebase)
+- Extracted `getSpriteSize()` helper for aspect-ratio-preserving scaling (was duplicated 4x)
+- Frog class now uses data-driven `FROG_TYPES` config instead of if/else chains
+- Pre-compute `hueFilter` string for poison dart frogs (avoids string concat each frame)
+- Array removals (enemies, particles, parade frogs) now use in-place splice instead of filter
+- Asset loader tracks failed count separately with `checkComplete()` helper
+- Volume slider saves debounced (300ms) to avoid localStorage spam during drag
+- Window resize handler debounced (150ms) to avoid rapid-fire during drag
+- Rolling animation uses `game.time` instead of `Date.now()` for frame consistency
+- Consolidated duplicate mobile controls media query in style.css
 
-### Fixed
-- (Bugs fixed)
+### Removed
+- Unused snake body segments system (`segments` array, `initSegments()`, `updateSegments()`)
+- Unused `touches` property from game state
+- Redundant render fallback gradient code (background asset always loads)
+- Duplicate `.audio-toggle` CSS rules (~60 lines)
+- Redundant dead player check (`game.player.dead || game.player.health <= 0` → just `.dead`)
 
 ## [0.5.9] - 2025-11-14
 

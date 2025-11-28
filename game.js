@@ -836,8 +836,8 @@ class Snake extends Entity {
                 // Both whipping sprites are bigger
                 targetSize = this.playerId === 2 ? 85 : 75;
             } else if (!this.onGround) {
-                // Green snake (P1) jumping sprite is bigger
-                targetSize = this.playerId === 1 ? 65 : 55;
+                // Jade (P1) jumping sprite is bigger
+                targetSize = this.playerId === 1 ? 80 : 55;
             } else {
                 targetSize = 55; // Default idle size
             }

@@ -1,12 +1,12 @@
 # Snake Style 🐍⚔️
 
-**Version 0.6.3** - A swamp-based beat 'em up arcade game with character selection
-
 Choose your serpent warrior and defend the swamp from endless waves of hostile frogs!
 
 <p align="center">
   <img src="graphics/logo_title.png" alt="Snake Style" width="600">
 </p>
+
+**Version 0.6.4**
 
 ## 🎮 Game Features
 
@@ -14,7 +14,7 @@ Choose your serpent warrior and defend the swamp from endless waves of hostile f
 - **Character Selection** - Choose between Jade or Blaze
 - **Wave-Based Combat** - Survive increasingly difficult frog invasions
 - **Combo System** - Chain attacks together for massive score multipliers
-- **Multiple Enemy Types** - Small, medium, and boss-sized frogs with unique behaviors
+- **Multiple Enemy Types** - Small, medium, poison dart, and boss frogs with unique behaviors
 - **Dynamic Water Mechanics** - Jump between lily pads or swim through the swamp
 - **Retro Pixel Art** - Beautiful hand-crafted sprites and animations
 - **Audio System** - Dynamic music system with title and gameplay tracks
@@ -23,12 +23,12 @@ Choose your serpent warrior and defend the swamp from endless waves of hostile f
 ### Combat Moves
 Each snake warrior has two powerful attacks:
 
-- **🌀 Roll Attack (F/K)** - Spin into a defensive ball and crash through enemies
+- **🌀 Roll Attack (0)** - Spin into a defensive ball and crash through enemies
   - Deals 25 damage
   - Grants temporary invulnerability
   - Perfect for escaping tight situations
 
-- **👅 Tongue Whip (G/L)** - Lash out with your tongue to strike enemies
+- **👅 Tongue Whip (1)** - Lash out with your tongue to strike enemies
   - Instant ranged attack (100px reach)
   - Deals 30 damage with knockback
   - Strike enemies in the direction you're facing
@@ -37,9 +37,11 @@ Each snake warrior has two powerful attacks:
 ## 🕹️ Controls
 
 ### Desktop
-- **Movement**: Arrow Keys `↑` `←` `↓` `→`
+- **Movement**: Arrow Keys `↑` `←` `↓` `→` or `WASD`
 - **Roll Attack**: `0` (zero key)
 - **Whip Attack**: `1` (one key)
+- **Pause**: `P` key
+- **Drop Through Lily Pad**: `↓` or `S` (while on a pad)
 
 ### Mobile Touch Controls
 - **Virtual Joystick** - On-screen joystick for movement
@@ -59,6 +61,7 @@ Each snake warrior has two powerful attacks:
 
 - **Small Frog**: 10 points base
 - **Medium Frog**: 25 points base
+- **Poison Dart Frog**: 35 points base (appears wave 4+)
 - **Large Boss Frog**: 50 points base
 - **Combo Multiplier**: Each consecutive hit multiplies damage dealt into score
 - **Wave Bonus**: Points increase with each wave survived
@@ -71,8 +74,9 @@ Each snake warrior has two powerful attacks:
 - **Water Jumping**: Reduced jump power when submerged
 
 ### Enemy AI
-- **Target Seeking**: Frogs jump toward the nearest player
+- **Target Seeking**: Frogs jump toward the player
 - **Attack Pattern**: Different frog types have varying jump speeds and damage
+- **Poison Dart Frogs**: Fast and deadly, appear in random colors from wave 4+
 - **Boss Behavior**: Large frogs are tankier but slower
 
 ### Health System
@@ -100,12 +104,13 @@ Or simply open `index.html` in a modern web browser.
 ```
 snakez/
 ├── index.html          # Main game page
+├── config.js          # Game configuration constants
 ├── game.js            # Game logic and mechanics
 ├── style.css          # UI styling
 ├── graphics/          # All game sprites and images
 │   ├── logo_title.png
-│   ├── snake_p1_*.png     # Player 1 sprites
-│   ├── snake_p2_*.png     # Player 2 sprites
+│   ├── snake_p1_*.png     # Jade snake sprites
+│   ├── snake_p2_*.png     # Blaze snake sprites
 │   ├── frog_*.png         # Enemy sprites
 │   ├── lilypad_*.png      # Platform sprites
 │   ├── effect_*.png       # Visual effects
@@ -132,7 +137,11 @@ All pixel art graphics are located in the `/graphics` folder:
 
 ## 📝 Version History
 
-### v0.6.3 (Current)
+### v0.6.4 (Current)
+- 📐 Increased Jade's jumping sprite size for better visibility
+- 📝 Documentation updates: fixed stale controls, added poison dart frogs, WASD controls, config.js
+
+### v0.6.3
 - 🎯 Targeted water jumps: snakes now arc precisely onto lily pads when well-aligned underneath
 - 🐸 Rebalanced wave difficulty with configurable frog counts (5 → 100 → 1000+ per wave)
 - 🪷 Improved lily pad landing detection for more reliable platforming
@@ -215,7 +224,7 @@ All pixel art graphics are located in the `/graphics` folder:
 - 🎯 Wave frogs spawn off-screen (-300 to -500px) for surge effect
 
 ### v0.4.6
-- 🎮 Changed Player 1 whip attack control from Right Ctrl to 1 key for easier accessibility
+- 🎮 Changed whip attack control from Right Ctrl to 1 key for easier accessibility
 - 📝 Updated all control documentation across UI and docs
 
 ### v0.4.5
@@ -297,7 +306,7 @@ All pixel art graphics are located in the `/graphics` folder:
 2. **Roll for Safety** - Use roll attack to escape when surrounded
 3. **Whip Strategy** - Use the tongue whip to keep enemies at a safe distance
 4. **Platform Advantage** - Fight on lily pads to avoid water slowdown
-5. **Team Coordination** - One player whips while the other rolls through
+5. **Water Jumping** - Position yourself under a lily pad for precise targeted jumps
 6. **Boss Focus** - Prioritize large frogs to prevent being overwhelmed
 
 ## 🐛 Known Issues
