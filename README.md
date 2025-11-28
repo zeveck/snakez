@@ -1,6 +1,6 @@
 # Snake Style 🐍⚔️
 
-**Version 0.5.10** - A swamp-based beat 'em up arcade game with character selection
+**Version 0.6.0** - A swamp-based beat 'em up arcade game with character selection
 
 Choose your serpent warrior and defend the swamp from endless waves of hostile frogs!
 
@@ -132,8 +132,14 @@ All pixel art graphics are located in the `/graphics` folder:
 
 ## 📝 Version History
 
-### v0.5.10 (Current)
-- (Add release notes here)
+### v0.6.0 (Current)
+- 🐛 Fixed wave completion bug that caused wave counter to increment rapidly during inter-wave delay
+- 🎮 Added `?wave=NUM` URL parameter to start at a specific wave
+- 🌊 Added `?multiwave=NUM` URL parameter for multi-wave challenge mode (all waves spawn at once)
+- 📊 Waves completed now calculated relative to starting wave
+
+### v0.5.10
+- Added /commitcheckpoint and /revversion Claude commands
 
 ### v0.5.9
 - 🔧 Fixed pause/unpause input mode consistency on desktop

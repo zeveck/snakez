@@ -4,6 +4,22 @@ All notable changes to Snake Style will be documented in this file.
 
 For the most up-to-date version history, see the "Version History" section in README.md.
 
+## [0.6.0] - 2025-11-28
+
+### Added
+- `?wave=NUM` URL parameter to start the game at a specific wave number
+- `?multiwave=NUM` URL parameter for multi-wave challenge mode (waves 2 through NUM spawn simultaneously after clearing wave 1)
+- Support for combined parameters: `?wave=3&multiwave=6` starts at wave 3, then spawns waves 4-6 together
+- HUD displays "Waves X-Y" during multiwave phase
+
+### Changed
+- Waves completed now calculated relative to starting wave for accurate scoring with custom start waves
+- Share URL encodes waves completed relative to starting wave
+
+### Fixed
+- Critical bug: Wave counter was incrementing every frame during 2-second inter-wave delay (could cause wave to jump to ~120+ instantly)
+- Added `waveTransitioning` guard flag to prevent multiple wave increments
+
 ## [0.5.10] - 2025-11-28
 
 ### Added

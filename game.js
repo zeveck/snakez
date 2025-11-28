@@ -468,6 +468,12 @@ const game = {
     gameOverPortraitTimer: 0,
     paused: false,
     hudElements: null,
+    // Wave system
+    waveTransitioning: false,  // Prevents multiple wave increments during delay
+    startingWave: 1,           // For ?wave=NUM param
+    multiwaveTarget: null,     // For ?multiwave=NUM param
+    multiwaveTriggered: false, // Has multiwave been spawned this game?
+    inMultiwave: false,        // Currently fighting multiwave enemies?
 };
 
 // Input handlers
@@ -1497,8 +1503,26 @@ function detectMobile() {
     }
 }
 
+// Parse URL query parameters for wave configuration
+function parseGameParams() {
+    const params = new URLSearchParams(window.location.search);
+
+    const wave = parseInt(params.get('wave'));
+    if (!isNaN(wave) && wave >= 1) {
+        game.startingWave = wave;
+    }
+
+    const multiwave = parseInt(params.get('multiwave'));
+    if (!isNaN(multiwave) && multiwave >= 2) {
+        game.multiwaveTarget = multiwave;
+    }
+}
+
 // Game functions
 function initGame() {
+    // Parse URL params for wave configuration (do this first)
+    parseGameParams();
+
     game.canvas = document.getElementById('gameCanvas');
     game.titleCanvas = document.getElementById('titleCanvas');
     game.titleCtx = game.titleCanvas.getContext('2d');
@@ -1566,8 +1590,9 @@ function initGame() {
             // Get snake ID from player or selectedSnakeId
             const snakeId = game.player ? game.player.variant.id : (game.selectedSnakeId || 'green');
 
-            // Generate URL
-            const url = `${window.location.origin}${window.location.pathname}#score=${game.score}&waves=${game.wave - 1}&small=${frogCounts.small}&medium=${frogCounts.medium}&poison=${frogCounts.poison_dart}&boss=${frogCounts.large}&snake=${snakeId}`;
+            // Generate URL (waves completed is relative to starting wave)
+            const wavesCompleted = game.wave - game.startingWave;
+            const url = `${window.location.origin}${window.location.pathname}#score=${game.score}&waves=${wavesCompleted}&small=${frogCounts.small}&medium=${frogCounts.medium}&poison=${frogCounts.poison_dart}&boss=${frogCounts.large}&snake=${snakeId}`;
 
             // Copy to clipboard
             navigator.clipboard.writeText(url).then(() => {
@@ -2116,11 +2141,15 @@ function startGame() {
     game.running = true;
     game.paused = false;
     document.getElementById('pauseOverlay').style.display = 'none';
-    game.wave = 1;
+    game.wave = game.startingWave;
     game.score = 0;
     game.enemies = [];
     game.particles = [];
     game.defeatedFrogs = [];
+    // Reset wave transition flags
+    game.waveTransitioning = false;
+    game.multiwaveTriggered = false;
+    game.inMultiwave = false;
 
     // Generate fresh lily pads for this game
     createLilyPads();
@@ -2221,6 +2250,23 @@ function spawnWave() {
     }
 }
 
+function spawnMultiWave(fromWave, toWave) {
+    audioManager.playBackground();
+    for (let w = fromWave; w <= toWave; w++) {
+        const count = 3 + w * 2;
+        for (let i = 0; i < count; i++) {
+            const x = Math.random() * (CONFIG.CANVAS_WIDTH - 100) + 50;
+            // Spread y positions vertically for a "raining frogs" effect
+            const y = Math.random() * 300 - 100;
+            let type = 'small';
+            if (w > 2 && Math.random() < 0.3) type = 'medium';
+            if (w > 3 && Math.random() < 0.2) type = 'poison_dart';
+            if (w > 5 && Math.random() < 0.1) type = 'large';
+            game.enemies.push(new Frog(x, y, type));
+        }
+    }
+}
+
 function togglePause() {
     if (!game.running || game.screen !== 'game') return;
 
@@ -2261,11 +2307,47 @@ function update() {
     }
 
     // Check wave completion
-    if (game.enemies.length === 0 && game.running) {
-        game.wave++;
-        setTimeout(() => {
-            if (game.running) spawnWave();
-        }, 2000);
+    if (game.enemies.length === 0 && game.running && !game.waveTransitioning) {
+        game.waveTransitioning = true;
+
+        // Check if we should trigger multiwave
+        const shouldTriggerMultiwave =
+            game.multiwaveTarget &&
+            !game.multiwaveTriggered &&
+            game.wave === game.startingWave &&
+            game.multiwaveTarget > game.startingWave;
+
+        if (game.inMultiwave) {
+            // Just cleared multiwave - jump to after multiwaveTarget
+            game.wave = game.multiwaveTarget + 1;
+            game.inMultiwave = false;
+            setTimeout(() => {
+                if (game.running) {
+                    spawnWave();
+                    game.waveTransitioning = false;
+                }
+            }, 2000);
+        } else if (shouldTriggerMultiwave) {
+            // Trigger multiwave
+            game.wave = game.startingWave + 1;
+            game.multiwaveTriggered = true;
+            game.inMultiwave = true;
+            setTimeout(() => {
+                if (game.running) {
+                    spawnMultiWave(game.startingWave + 1, game.multiwaveTarget);
+                    game.waveTransitioning = false;
+                }
+            }, 2000);
+        } else {
+            // Normal wave progression
+            game.wave++;
+            setTimeout(() => {
+                if (game.running) {
+                    spawnWave();
+                    game.waveTransitioning = false;
+                }
+            }, 2000);
+        }
     }
 
     // Update lily pads
@@ -2335,7 +2417,11 @@ function updateHUD() {
     }
 
     if (hud.waveNumber) {
-        hud.waveNumber.textContent = `Wave ${game.wave}`;
+        if (game.inMultiwave) {
+            hud.waveNumber.textContent = `Waves ${game.startingWave + 1}-${game.multiwaveTarget}`;
+        } else {
+            hud.waveNumber.textContent = `Wave ${game.wave}`;
+        }
     }
 
     if (hud.enemyCount) {
@@ -2404,7 +2490,8 @@ function gameOver(isSharedResult = false) {
         audioManager.stopAll();
     }
     document.getElementById('finalScore').textContent = `Score: ${game.score}`;
-    document.getElementById('finalWave').textContent = `Waves Completed: ${game.wave - 1}`;
+    const wavesCompleted = game.wave - game.startingWave;
+    document.getElementById('finalWave').textContent = `Waves Completed: ${wavesCompleted}`;
 
     // Calculate frog counts by type
     const frogCounts = {
