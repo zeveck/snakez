@@ -4,6 +4,14 @@ All notable changes to Snake Style will be documented in this file.
 
 For the most up-to-date version history, see the "Version History" section in README.md.
 
+## [0.6.5] - 2025-11-28
+
+### Changed
+- Renamed all snake sprite files from `snake_p1_*`/`snake_p2_*` to `jade_*`/`blaze_*`
+- Updated asset manifest keys to match new filenames (`jade_idle`, `blaze_jumping`, etc.)
+- Updated `SNAKE_VARIANTS` spritePrefix from `'snake_p1'`/`'snake_p2'` to `'jade'`/`'blaze'`
+- Updated title screen sprite references to use new asset names
+
 ## [0.6.4] - 2025-11-28
 
 ### Changed

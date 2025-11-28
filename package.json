@@ -1,6 +1,6 @@
 {
   "name": "snake-style",
-  "version": "0.6.4",
+  "version": "0.6.5",
   "description": "Snake Style - A swamp-based beat 'em up game featuring serpent warriors battling waves of frogs with character selection",
   "scripts": {
     "start": "npx http-server -p 1990 -a 0.0.0.0"

@@ -6,7 +6,7 @@ Choose your serpent warrior and defend the swamp from endless waves of hostile f
   <img src="graphics/logo_title.png" alt="Snake Style" width="600">
 </p>
 
-**Version 0.6.4**
+**Version 0.6.5**
 
 ## 🎮 Game Features
 
@@ -109,8 +109,8 @@ snakez/
 ├── style.css          # UI styling
 ├── graphics/          # All game sprites and images
 │   ├── logo_title.png
-│   ├── snake_p1_*.png     # Jade snake sprites
-│   ├── snake_p2_*.png     # Blaze snake sprites
+│   ├── jade_*.png         # Jade snake sprites
+│   ├── blaze_*.png        # Blaze snake sprites
 │   ├── frog_*.png         # Enemy sprites
 │   ├── lilypad_*.png      # Platform sprites
 │   ├── effect_*.png       # Visual effects
@@ -137,7 +137,10 @@ All pixel art graphics are located in the `/graphics` folder:
 
 ## 📝 Version History
 
-### v0.6.4 (Current)
+### v0.6.5 (Current)
+- 🏷️ Renamed sprite files from `snake_p1_*`/`snake_p2_*` to `jade_*`/`blaze_*` for clarity
+
+### v0.6.4
 - 📐 Increased Jade's jumping sprite size for better visibility
 - 📝 Documentation updates: fixed stale controls, added poison dart frogs, WASD controls, config.js
 

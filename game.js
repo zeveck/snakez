@@ -49,8 +49,8 @@ const SNAKE_VARIANTS = {
         id: 'green',
         displayName: 'Jade',
         color: '#4CAF50',
-        spritePrefix: 'snake_p1',
-        playerId: 1,  // Keep for sprite loading compatibility
+        spritePrefix: 'jade',
+        playerId: 1,
         hudBorderColor: '#4CAF50',
         size: 66  // Title screen display size
     },
@@ -58,8 +58,8 @@ const SNAKE_VARIANTS = {
         id: 'orange',
         displayName: 'Blaze',
         color: '#FF9800',
-        spritePrefix: 'snake_p2',
-        playerId: 2,  // Keep for sprite loading compatibility
+        spritePrefix: 'blaze',
+        playerId: 2,
         hudBorderColor: '#FF9800',
         size: 98  // Title screen display size
     }
@@ -78,19 +78,19 @@ const assets = {
         'background_swamp': 'graphics/swamp-background-day.jpg',
         'title_background': 'graphics/title-background_swamp.jpg',
 
-        // Green Snake
-        'snake_p1_idle': 'graphics/snake_p1_idle.png',
-        'snake_p1_extended': 'graphics/snake_p1_extended.png',
-        'snake_p1_jumping': 'graphics/snake_p1_jumping.png',
-        'snake_p1_rolling': 'graphics/snake_p1_rolling.png',
-        'snake_p1_swimming': 'graphics/snake_p1_swimming.png',
+        // Jade Snake
+        'jade_idle': 'graphics/jade_idle.png',
+        'jade_extended': 'graphics/jade_extended.png',
+        'jade_jumping': 'graphics/jade_jumping.png',
+        'jade_rolling': 'graphics/jade_rolling.png',
+        'jade_swimming': 'graphics/jade_swimming.png',
 
-        // Orange Snake
-        'snake_p2_idle': 'graphics/snake_p2_idle.png',
-        'snake_p2_extended': 'graphics/snake_p2_extended.png',
-        'snake_p2_jumping': 'graphics/snake_p2_jumping.png',
-        'snake_p2_rolling': 'graphics/snake_p2_rolling.png',
-        'snake_p2_swimming': 'graphics/snake_p2_swimming.png',
+        // Blaze Snake
+        'blaze_idle': 'graphics/blaze_idle.png',
+        'blaze_extended': 'graphics/blaze_extended.png',
+        'blaze_jumping': 'graphics/blaze_jumping.png',
+        'blaze_rolling': 'graphics/blaze_rolling.png',
+        'blaze_swimming': 'graphics/blaze_swimming.png',
 
         // Enemies
         'frog_small_idle': 'graphics/frog_small_idle.png',
@@ -594,7 +594,7 @@ class Snake extends Entity {
     constructor(x, y, variant) {
         super(x, y, 50, 40);
         this.variant = variant;
-        this.playerId = variant.playerId;  // Needed for sprite loading (snake_p1 vs snake_p2)
+        this.playerId = variant.playerId;  // Used for sprite size differentiation (Jade=1, Blaze=2)
         this.color = variant.color;
         this.health = 100;
         this.maxHealth = 100;
@@ -1848,9 +1848,9 @@ function drawTitleScreen() {
     // Update title snake animations
     updateTitleSnakes();
 
-    // Draw left snake (P1 - Green)
+    // Draw left snake (Jade)
     const leftSprite = game.titleSnakes.left.jumping ?
-        assets.get('snake_p1_jumping') : assets.get('snake_p1_idle');
+        assets.get('jade_jumping') : assets.get('jade_idle');
     if (leftSprite && leftSprite.complete) {
         const snakeSize = 66;
         const snakeX = 270;
@@ -1889,9 +1889,9 @@ function drawTitleScreen() {
         ctx.drawImage(logo, logoX, logoY, logoWidth, logoHeight);
     }
 
-    // Draw right snake (P2 - Orange) facing left
+    // Draw right snake (Blaze) facing left
     const rightSprite = game.titleSnakes.right.jumping ?
-        assets.get('snake_p2_jumping') : assets.get('snake_p2_idle');
+        assets.get('blaze_jumping') : assets.get('blaze_idle');
     if (rightSprite && rightSprite.complete) {
         const snakeSize = 98;
         const snakeX = CONFIG.CANVAS_WIDTH - 270;
