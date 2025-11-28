@@ -2484,14 +2484,40 @@ function populateFromURL(urlData) {
     }
 }
 
+// Animate a counter from 0 to targetValue with ease-out effect
+function animateCounter(element, targetValue, duration = 500, delay = 0) {
+    element.textContent = '0';
+    if (targetValue === 0) return;
+
+    setTimeout(() => {
+        const startTime = performance.now();
+
+        function update(currentTime) {
+            const elapsed = currentTime - startTime;
+            const progress = Math.min(elapsed / duration, 1);
+
+            // Ease-out cubic
+            const eased = 1 - Math.pow(1 - progress, 3);
+            const currentValue = Math.floor(targetValue * eased);
+
+            element.textContent = currentValue;
+
+            if (progress < 1) {
+                requestAnimationFrame(update);
+            } else {
+                element.textContent = targetValue;
+            }
+        }
+
+        requestAnimationFrame(update);
+    }, delay);
+}
+
 function gameOver(isSharedResult = false) {
     game.running = false;
     if (!isSharedResult) {
         audioManager.stopAll();
     }
-    document.getElementById('finalScore').textContent = `Score: ${game.score}`;
-    const wavesCompleted = game.wave - game.startingWave;
-    document.getElementById('finalWave').textContent = `Waves Completed: ${wavesCompleted}`;
 
     // Calculate frog counts by type
     const frogCounts = {
@@ -2507,17 +2533,27 @@ function gameOver(isSharedResult = false) {
         }
     });
 
-    // Update frog count displays
-    document.getElementById('smallFrogCount').textContent = frogCounts.small;
-    document.getElementById('mediumFrogCount').textContent = frogCounts.medium;
-    document.getElementById('poisonFrogCount').textContent = frogCounts.poison_dart;
-    document.getElementById('bossFrogCount').textContent = frogCounts.large;
+    const totalFrogs = game.defeatedFrogs.length;
+    const wavesCompleted = game.wave - game.startingWave;
+
+    // Get all counter elements (score/wave use inner spans for animation)
+    const scoreEl = document.getElementById('finalScoreValue');
+    const waveEl = document.getElementById('finalWaveValue');
+    const totalFrogsEl = document.getElementById('totalFrogs');
+    const smallEl = document.getElementById('smallFrogCount');
+    const mediumEl = document.getElementById('mediumFrogCount');
+    const poisonEl = document.getElementById('poisonFrogCount');
+    const bossEl = document.getElementById('bossFrogCount');
+
+    // Initialize all to 0
+    [scoreEl, waveEl, totalFrogsEl, smallEl, mediumEl, poisonEl, bossEl].forEach(el => {
+        if (el) el.textContent = '0';
+    });
 
     // Update snake portrait on Game Over screen
     game.gameOverPortraitState = 'idle';
     game.gameOverPortraitTimer = 0;
     updateGameOverPortrait();
-
 
     // Update buttons for shared results
     const shareBtn = document.getElementById('shareBtn');
@@ -2540,6 +2576,15 @@ function gameOver(isSharedResult = false) {
     setTimeout(() => {
         // Background already set during init, just show the screen
         setScreen('gameover');
+
+        // Animate all counters together when screen becomes visible
+        animateCounter(scoreEl, game.score, 2000, 0);
+        animateCounter(waveEl, wavesCompleted, 2000, 0);
+        animateCounter(totalFrogsEl, totalFrogs, 2000, 0);
+        animateCounter(smallEl, frogCounts.small, 2000, 0);
+        animateCounter(mediumEl, frogCounts.medium, 2000, 0);
+        animateCounter(poisonEl, frogCounts.poison_dart, 2000, 0);
+        animateCounter(bossEl, frogCounts.large, 2000, 0);
 
         // Start the frog parade
         if (!frogParade) frogParade = new FrogParade();

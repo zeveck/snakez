@@ -175,15 +175,15 @@
                 <div class="game-over-scores-wrapper">
                     <img id="gameOverSnakePortrait" class="game-over-snake-portrait" src="" alt="">
                     <div class="game-over-scores-center">
-                        <p id="finalScore">Score: 0</p>
-                        <p id="finalWave">Waves Completed: 0</p>
+                        <p id="finalScore">Score: <span id="finalScoreValue">0</span></p>
+                        <p id="finalWave">Waves Completed: <span id="finalWaveValue">0</span></p>
                     </div>
                     <div class="game-over-spacer"></div>
                 </div>
                 <div id="frogCounts" class="frog-counts">
                     <div class="frog-counts-header">
                         <button id="paradeSpeedBtn" class="parade-control-btn" title="Cycle parade speed">❯</button>
-                        <h3>Frogs Defeated</h3>
+                        <h3><span id="totalFrogs">0</span> Frogs Defeated</h3>
                         <button id="paradeReplayBtn" class="parade-control-btn" title="Replay parade">↻</button>
                     </div>
                     <div class="frog-count-grid">
@@ -216,7 +216,7 @@
         </div>
     </div>
 
-    <div id="version">v0.6.0</div>
+    <div id="version">v0.6.1</div>
 
     <!-- Audio Toggle Button -->
     <button id="audioToggle" class="audio-toggle" aria-label="Toggle audio">

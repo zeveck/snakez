@@ -4,6 +4,16 @@ All notable changes to Snake Style will be documented in this file.
 
 For the most up-to-date version history, see the "Version History" section in README.md.
 
+## [0.6.1] - 2025-11-28
+
+### Added
+- "N Frogs Defeated" total count displayed in game over summary header
+- Animated counter effect on game over screen - all stats count up from 0
+
+### Changed
+- Game over summary screen layout improved for better readability
+- Score and Waves text now has drop shadow for better visibility
+
 ## [0.6.0] - 2025-11-28
 
 ### Added
