@@ -515,17 +515,39 @@ class Entity {
         this.onGround = false;
         let onLilyPad = false;
         for (const pad of game.lilyPads) {
-            // Check if entity is on or near the lily pad (with tolerance for bobbing)
-            const isNearPad = this.x < pad.x + pad.width &&
-                             this.x + this.width > pad.x &&
-                             this.y + this.height >= pad.y - 5 &&  // 5px tolerance above
-                             this.y + this.height <= pad.y + 15;   // 15px tolerance below
+            const entityCenterX = this.x + this.width / 2;
+            const padCenterX = pad.x + pad.width / 2;
 
-            if (isNearPad && this.vy >= 0 && !this.droppingThrough) {
+            // Standard landing check: entity center anywhere over pad
+            const horizontalOverlap = entityCenterX >= pad.x && entityCenterX <= pad.x + pad.width;
+            const verticallyAligned = this.y + this.height >= pad.y - 5 &&  // 5px tolerance above
+                                      this.y + this.height <= pad.y + 15;   // 15px tolerance below
+
+            // Standard landing: falling onto lily pad from above
+            if (horizontalOverlap && verticallyAligned && this.vy >= 0 && !this.droppingThrough) {
                 this.y = pad.y - this.height;
                 this.vy = 0;
                 this.onGround = true;
                 onLilyPad = true;
+                // Brief cooldown to prevent immediate re-jump when holding up after water jump
+                if (this.jumpCooldown !== undefined && this.inWater) {
+                    this.jumpCooldown = 10;
+                }
+                break;
+            }
+
+            // Arc landing: at the peak of a targeted water jump (vy near zero but still slightly negative)
+            // Only applies when well-centered on pad
+            const wellCentered = Math.abs(entityCenterX - padCenterX) <= 25;
+            const atArcPeak = this.vy > -2 && this.vy < 0;
+            if (wellCentered && verticallyAligned && atArcPeak && !this.droppingThrough) {
+                this.y = pad.y - this.height;
+                this.vy = 0;
+                this.onGround = true;
+                onLilyPad = true;
+                if (this.jumpCooldown !== undefined) {
+                    this.jumpCooldown = 10;
+                }
                 break;
             }
         }
@@ -588,6 +610,7 @@ class Snake extends Entity {
         this.invulnerable = 0;
         this.droppingThrough = false;
         this.groundedFrames = 0;
+        this.jumpCooldown = 0;
     }
 
     update() {
@@ -608,6 +631,7 @@ class Snake extends Entity {
         // Update timers
         if (this.rollTimer > 0) this.rollTimer--;
         if (this.rollCooldown > 0) this.rollCooldown--;
+        if (this.jumpCooldown > 0) this.jumpCooldown--;
         if (this.whipTimer > 0) this.whipTimer--;
         if (this.whipCooldown > 0) this.whipCooldown--;
         if (this.invulnerable > 0) this.invulnerable--;
@@ -651,12 +675,21 @@ class Snake extends Entity {
         }
 
         // Jump
-        if (playerInput.y < 0 && this.onGround) {
-            this.vy = this.inWater ? -CONFIG.WATER_JUMP : -CONFIG.PLAYER_JUMP;
-            this.onGround = false;
+        if (playerInput.y < 0 && this.onGround && this.jumpCooldown === 0) {
             if (this.inWater) {
+                // Check for targeted lily pad jump
+                const target = findTargetLilyPad(this);
+                if (target) {
+                    // Calculate velocity to arc onto the pad (with small buffer for safety)
+                    this.vy = -Math.sqrt(2 * CONFIG.GRAVITY * (target.heightNeeded + 15));
+                } else {
+                    this.vy = -CONFIG.WATER_JUMP;
+                }
                 createSplash(this.x + this.width / 2, this.y + this.height);
+            } else {
+                this.vy = -CONFIG.PLAYER_JUMP;
             }
+            this.onGround = false;
         }
 
         // Drop through lily pad
@@ -1965,6 +1998,41 @@ function createLilyPads() {
     }
 }
 
+// Find a lily pad above the entity that they're well-aligned with for targeted jumping
+function findTargetLilyPad(entity) {
+    const entityCenterX = entity.x + entity.width / 2;
+    const entityBottom = entity.y + entity.height;
+
+    let bestPad = null;
+    let bestHeight = Infinity;
+
+    for (const pad of game.lilyPads) {
+        const padCenterX = pad.x + pad.width / 2;
+        const horizontalDist = Math.abs(entityCenterX - padCenterX);
+
+        // Must be well-centered (within 40px of pad center)
+        if (horizontalDist > 25) continue;
+
+        // Pad must be above us
+        const heightNeeded = entityBottom - pad.y;
+        if (heightNeeded <= 0) continue;
+
+        // Must be reachable (max ~150px jump from water)
+        if (heightNeeded > 150) continue;
+
+        // Pick the closest pad above us
+        if (heightNeeded < bestHeight) {
+            bestHeight = heightNeeded;
+            bestPad = pad;
+        }
+    }
+
+    if (bestPad) {
+        return { pad: bestPad, heightNeeded: bestHeight };
+    }
+    return null;
+}
+
 function setupControls() {
     // Keyboard
     window.addEventListener('keydown', (e) => {
@@ -2235,9 +2303,20 @@ function setScreen(screen) {
     }
 }
 
+function getWaveFrogCount(wave) {
+    let count;
+    if (CONFIG.WAVE_FROG_COUNTS[wave]) {
+        count = CONFIG.WAVE_FROG_COUNTS[wave];
+    } else {
+        // Fallback for waves beyond the table
+        count = CONFIG.WAVE_FROG_FALLBACK_BASE + (wave - 10) * CONFIG.WAVE_FROG_FALLBACK_INCREMENT;
+    }
+    return Math.min(count, CONFIG.MAX_FROGS_PER_WAVE);
+}
+
 function spawnWave() {
     audioManager.playBackground();
-    const count = 3 + game.wave * 2;
+    const count = getWaveFrogCount(game.wave);
     for (let i = 0; i < count; i++) {
         const x = Math.random() * (CONFIG.CANVAS_WIDTH - 100) + 50;
         const y = 100;
@@ -2253,7 +2332,7 @@ function spawnWave() {
 function spawnMultiWave(fromWave, toWave) {
     audioManager.playBackground();
     for (let w = fromWave; w <= toWave; w++) {
-        const count = 3 + w * 2;
+        const count = getWaveFrogCount(w);
         for (let i = 0; i < count; i++) {
             const x = Math.random() * (CONFIG.CANVAS_WIDTH - 100) + 50;
             // Spread y positions vertically for a "raining frogs" effect

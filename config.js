@@ -15,6 +15,22 @@ const CONFIG = {
     COMBO_TIMEOUT: 2000,
     PARTICLE_POOL_SIZE: 500,
     PARTICLE_MAX_ACTIVE: 2000,
+    // Wave frog counts - specific counts per wave, waves beyond use fallback formula
+    WAVE_FROG_COUNTS: {
+        1: 5,
+        2: 100,
+        3: 150,
+        4: 200,
+        5: 250,
+        6: 300,
+        7: 400,
+        8: 500,
+        9: 750,
+        10: 1000,
+    },
+    MAX_FROGS_PER_WAVE: 2000,
+    WAVE_FROG_FALLBACK_BASE: 1000,      // Base count for waves beyond table
+    WAVE_FROG_FALLBACK_INCREMENT: 250,  // Additional frogs per wave beyond table
 };
 
 // Frog type configuration - centralizes all type-specific properties
