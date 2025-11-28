@@ -4,6 +4,11 @@ All notable changes to Snake Style will be documented in this file.
 
 For the most up-to-date version history, see the "Version History" section in README.md.
 
+## [0.6.2] - 2025-11-28
+
+### Changed
+- Title screen selection indicator now displays character names "JADE" and "BLAZE" instead of generic "SELECTED" text
+
 ## [0.6.1] - 2025-11-28
 
 ### Added

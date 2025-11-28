@@ -1,6 +1,6 @@
 # Snake Style 🐍⚔️
 
-**Version 0.6.1** - A swamp-based beat 'em up arcade game with character selection
+**Version 0.6.2** - A swamp-based beat 'em up arcade game with character selection
 
 Choose your serpent warrior and defend the swamp from endless waves of hostile frogs!
 
@@ -132,7 +132,10 @@ All pixel art graphics are located in the `/graphics` folder:
 
 ## 📝 Version History
 
-### v0.6.1 (Current)
+### v0.6.2 (Current)
+- 🏷️ Title screen now shows snake names (JADE/BLAZE) instead of generic "SELECTED" text
+
+### v0.6.1
 - 🎯 Improved game over summary screen readability
 - 📊 Added "N Frogs Defeated" total count in summary
 - ✨ Added animated counter effect - stats count up from 0 when screen appears

@@ -1840,7 +1840,7 @@ function drawTitleScreen() {
             ctx.fillStyle = '#FFD700';
             ctx.font = 'bold 16px "Courier New"';
             ctx.textAlign = 'center';
-            ctx.fillText('▼ SELECTED ▼', snakeX, snakeY - height/2 - 15);
+            ctx.fillText('▼ JADE ▼', snakeX, snakeY - height/2 - 15);
             ctx.restore();
         }
     }
@@ -1887,7 +1887,7 @@ function drawTitleScreen() {
             ctx.fillStyle = '#FFD700';
             ctx.font = 'bold 16px "Courier New"';
             ctx.textAlign = 'center';
-            ctx.fillText('▼ SELECTED ▼', snakeX, snakeY - height/2 - 15);
+            ctx.fillText('▼ BLAZE ▼', snakeX, snakeY - height/2 - 15);
             ctx.restore();
         }
     }
